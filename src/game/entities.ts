@@ -117,37 +117,57 @@ export class Gloomba extends Entity {
     const py = this.y;
 
     if (this.isStomped) {
-      // Flattened brown pancake
-      ctx.fillStyle = '#854d0e';
-      ctx.fillRect(px, py + 16, this.width, 10);
+      // Flattened deckhand
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(px, py + 18, this.width, 8);
+      ctx.fillStyle = '#ef4444'; // Red neckerchief visible
+      ctx.fillRect(px + 6, py + 19, 14, 4);
       return;
     }
 
-    // Gloomba body (Brown mushroom shape)
-    ctx.fillStyle = '#92400e';
+    // Pete's Deckhand Sailor (Dark rubber-hose body with blue sailor cap & red neckerchief)
+    ctx.fillStyle = '#1e293b';
     ctx.beginPath();
-    ctx.arc(px + 13, py + 12, 12, Math.PI, 0, false);
+    ctx.arc(px + 13, py + 12, 11, Math.PI, 0, false);
     ctx.lineTo(px + 23, py + 22);
     ctx.lineTo(px + 3, py + 22);
     ctx.closePath();
     ctx.fill();
 
-    // Eyes
+    // Blue & White Sailor Dixie Cup Hat
     ctx.fillStyle = '#ffffff';
-    ctx.fillRect(px + 6, py + 10, 4, 7);
-    ctx.fillRect(px + 16, py + 10, 4, 7);
+    ctx.fillRect(px + 5, py - 1, 16, 5);
+    ctx.fillStyle = '#2563eb';
+    ctx.fillRect(px + 7, py + 2, 12, 2);
 
-    // Angry Kaizo pupils
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(px + (this.facing < 0 ? 6 : 8), py + 12, 2, 4);
-    ctx.fillRect(px + (this.facing < 0 ? 16 : 18), py + 12, 2, 4);
+    // Red Sailor Neckerchief (Pop of color!)
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.moveTo(px + 7, py + 18);
+    ctx.lineTo(px + 19, py + 18);
+    ctx.lineTo(px + 13, py + 24);
+    ctx.closePath();
+    ctx.fill();
 
-    // Spiky brow
-    ctx.fillStyle = '#451a03';
-    ctx.fillRect(px + 4, py + 8, 18, 2);
+    // Pie-eyes (1928 vintage style)
+    ctx.fillStyle = '#f8fafc';
+    ctx.fillRect(px + 6, py + 8, 4, 6);
+    ctx.fillRect(px + 16, py + 8, 4, 6);
 
-    // Feet
-    ctx.fillStyle = '#451a03';
+    // Angry pupils
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(px + (this.facing < 0 ? 6 : 8), py + 10, 2, 4);
+    ctx.fillRect(px + (this.facing < 0 ? 16 : 18), py + 10, 2, 4);
+
+    // Grumpy Bulldog mouth
+    ctx.strokeStyle = '#f8fafc';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(px + 13, py + 16, 4, Math.PI * 0.2, Math.PI * 0.8, false);
+    ctx.stroke();
+
+    // Sailor boots
+    ctx.fillStyle = '#0f172a';
     ctx.fillRect(px + 2, py + 22, 8, 4);
     ctx.fillRect(px + 16, py + 22, 8, 4);
   }
@@ -192,16 +212,36 @@ export class FallingSpike extends Entity {
     const px = this.x + this.shakeOffset - cameraX;
     const py = this.y;
 
-    ctx.fillStyle = '#e2e8f0';
+    // Anchor chain trailing upward
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(px, py);
-    ctx.lineTo(px + this.width, py);
-    ctx.lineTo(px + this.width / 2, py + this.height);
+    ctx.moveTo(px + this.width / 2, py);
+    ctx.lineTo(px + this.width / 2, py - 30);
+    ctx.stroke();
+
+    // Heavy iron anchor body
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(px + 8, py, 4, 16);
+
+    // Anchor crossbar
+    ctx.fillStyle = '#64748b';
+    ctx.fillRect(px + 2, py + 4, 16, 3);
+
+    // Curved sharp flukes
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(px + 10, py + 14, 8, 0.2, Math.PI - 0.2, false);
+    ctx.stroke();
+
+    // Bottom point
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.moveTo(px + 10, py + 24);
+    ctx.lineTo(px + 7, py + 16);
+    ctx.lineTo(px + 13, py + 16);
     ctx.closePath();
     ctx.fill();
-
-    ctx.strokeStyle = '#ef4444';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
   }
 }

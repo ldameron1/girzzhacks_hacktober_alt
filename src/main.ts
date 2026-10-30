@@ -129,7 +129,7 @@ window.addEventListener('DOMContentLoaded', () => {
     engine.level.createDefaultMap();
     engine.totalMutationsApplied = 0;
     engine.player.clearConsecutiveDeaths();
-    engine.player.reset(3 * 32, 13 * 32);
+    engine.player.reset(3 * 32, 11 * 32);
     engine.telemetry.startNewRun(engine.player.x);
     engine.resetLevelEntities();
     engine.isPaused = false;
@@ -173,7 +173,7 @@ window.addEventListener('DOMContentLoaded', () => {
     engine.level.createDefaultMap();
     engine.totalMutationsApplied = 0;
     engine.player.clearConsecutiveDeaths();
-    engine.player.reset(3 * 32, 13 * 32);
+    engine.player.reset(3 * 32, 11 * 32);
     engine.telemetry.startNewRun(engine.player.x);
     engine.resetLevelEntities();
     victoryOverlay.classList.add('hidden');
@@ -184,7 +184,7 @@ window.addEventListener('DOMContentLoaded', () => {
   btnReplay?.addEventListener('click', () => {
     victoryOverlay.classList.add('hidden');
     engine.player.clearConsecutiveDeaths();
-    engine.player.reset(3 * 32, 13 * 32);
+    engine.player.reset(3 * 32, 11 * 32);
     engine.telemetry.startNewRun(engine.player.x);
     engine.resetLevelEntities();
     engine.isPaused = false;

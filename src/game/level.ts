@@ -2,14 +2,14 @@ export const TILE_SIZE = 32;
 
 export enum TileType {
   EMPTY = 0,
-  SOLID = 1,
-  QUESTION = 2,
-  SPIKE = 3,
-  CRUMBLING = 4,
-  SPRING = 5,
-  CHECKPOINT = 6,
-  FLAGPOLE = 7,
-  KAIZO = 8 // Invisible until hit from below
+  SOLID = 1,      // Steamboat Wooden Deck / Hull
+  QUESTION = 2,   // Brass Cargo Crate
+  SPIKE = 3,      // Rusty Iron Anchor Hazard
+  CRUMBLING = 4,  // Rotting Driftwood Plank
+  SPRING = 5,     // Nautical Lifebuoy Springboard
+  CHECKPOINT = 6, // Ship's Brass Bell
+  FLAGPOLE = 7,   // Steamboat Smoke Funnel Mast
+  KAIZO = 8       // Phantom Film Reel Block
 }
 
 export interface DynamicTileState {
@@ -26,11 +26,12 @@ export class Level {
   public coins: Array<{ x: number; y: number; collected: boolean }>;
   public initialEnemies: Array<{ type: string; x: number; y: number }>;
   public checkpointX: number = 3 * TILE_SIZE;
-  public checkpointY: number = 13 * TILE_SIZE;
+  public checkpointY: number = 10 * TILE_SIZE;
+  public waterAnimTimer: number = 0;
 
   constructor() {
     this.width = 110;
-    this.height = 18;
+    this.height = 15; // Exactly 15 tiles = 480px canvas height
     this.tiles = [];
     this.dynamicState = new Map();
     this.coins = [];
@@ -45,80 +46,85 @@ export class Level {
     this.coins = [];
     this.initialEnemies = [];
 
-    // Base ground (row 15 and 16)
+    // Steamboat deck is 3 tiles thick: rows 12, 13, 14
+    // This ensures a couple visible ground tiles across the entire bottom!
     for (let x = 0; x < this.width; x++) {
-      // Pits at X: 22-24, 45-48, 72-74
-      const isPit = (x >= 22 && x <= 24) || (x >= 45 && x <= 48) || (x >= 72 && x <= 74);
+      // Pits (Mississippi River Gaps): x=22-24, x=45-48, x=71-74
+      const isPit = (x >= 22 && x <= 24) || (x >= 45 && x <= 48) || (x >= 71 && x <= 74);
       if (!isPit) {
-        this.tiles[15][x] = TileType.SOLID;
-        this.tiles[16][x] = TileType.SOLID;
-        this.tiles[17][x] = TileType.SOLID;
+        this.tiles[12][x] = TileType.SOLID; // Top deck plank
+        this.tiles[13][x] = TileType.SOLID; // Mid timber hull
+        this.tiles[14][x] = TileType.SOLID; // Lower hull keel
       }
     }
 
-    // Section 1: Introduction blocks
-    this.tiles[11][10] = TileType.QUESTION;
-    this.tiles[11][12] = TileType.SOLID;
-    this.tiles[11][13] = TileType.QUESTION;
-    this.tiles[11][14] = TileType.SOLID;
-    this.tiles[7][13] = TileType.QUESTION;
+    // Section 1: Steamboat cargo crates
+    this.tiles[8][9] = TileType.QUESTION;
+    this.tiles[8][11] = TileType.SOLID;
+    this.tiles[8][12] = TileType.QUESTION;
+    this.tiles[8][13] = TileType.SOLID;
+    this.tiles[4][12] = TileType.QUESTION;
 
-    // Pipes (X: 18, 30, 40)
-    this.buildPipe(18, 2);
-    this.buildPipe(30, 3);
-    this.buildPipe(40, 4);
+    // Steamboat Steam Funnels (replaces pipes at X: 17, 29, 39)
+    this.buildFunnel(17, 2);
+    this.buildFunnel(29, 3);
+    this.buildFunnel(39, 3);
 
-    // Section 2: First Pit with floating stepping stone
-    this.tiles[13][23] = TileType.SOLID;
-    // Initial classic Kaizo block bait right over the pit jump!
-    this.setKaizo(23, 10);
+    // Section 2: First River Gap with stepping raft
+    this.tiles[10][23] = TileType.SOLID;
+    // Classic Kaizo invisible block directly above river leap
+    this.setKaizo(23, 7);
 
-    // Section 3: Midpoint Checkpoint Flag
-    this.tiles[14][35] = TileType.CHECKPOINT;
+    // Section 3: Midpoint Ship's Bell Checkpoint
+    this.tiles[11][34] = TileType.CHECKPOINT;
+    this.checkpointX = 34 * TILE_SIZE;
+    this.checkpointY = 10 * TILE_SIZE;
 
-    // Section 4: Crumbling bridge over second wide pit
+    // Section 4: Rotting driftwood suspension bridge over second river pit
     for (let x = 45; x <= 48; x++) {
-      this.tiles[12][x] = TileType.CRUMBLING;
+      this.tiles[10][x] = TileType.CRUMBLING;
     }
 
-    // Section 5: High platforms & Springboard
-    this.tiles[14][55] = TileType.SPRING;
-    this.tiles[8][58] = TileType.SOLID;
-    this.tiles[8][59] = TileType.SOLID;
-    this.tiles[8][60] = TileType.SOLID;
+    // Section 5: Lifebuoy Springboard & Upper Promenade Deck
+    this.tiles[11][54] = TileType.SPRING;
+    this.tiles[6][57] = TileType.SOLID;
+    this.tiles[6][58] = TileType.SOLID;
+    this.tiles[6][59] = TileType.SOLID;
+    this.tiles[6][60] = TileType.SOLID;
 
-    // Section 6: Spiky corridor
-    this.tiles[14][65] = TileType.SPIKE;
-    this.tiles[14][66] = TileType.SPIKE;
-    this.tiles[11][65] = TileType.SOLID;
-    this.tiles[11][66] = TileType.SOLID;
+    // Section 6: Rusty Anchor Hazard Corridor
+    this.tiles[11][64] = TileType.SPIKE;
+    this.tiles[11][65] = TileType.SPIKE;
+    this.tiles[8][64] = TileType.SOLID;
+    this.tiles[8][65] = TileType.SOLID;
 
-    // Section 7: Staircase leading to flagpole
-    this.buildStairs(80, 5, true);
+    // Section 7: Grand Captain's Stairs leading to Pilot House
+    this.buildStairs(79, 5, true);
 
-    // Flagpole at X: 92
-    for (let y = 6; y <= 14; y++) {
-      this.tiles[y][92] = TileType.FLAGPOLE;
+    // Steamboat Flag Mast at X: 91
+    for (let y = 3; y <= 11; y++) {
+      this.tiles[y][91] = TileType.FLAGPOLE;
     }
-    this.tiles[15][92] = TileType.SOLID;
+    this.tiles[12][91] = TileType.SOLID;
 
-    // Spawn some initial coins
-    this.coins.push({ x: 10, y: 10, collected: false });
-    this.coins.push({ x: 13, y: 6, collected: false });
-    this.coins.push({ x: 23, y: 11, collected: false });
-    this.coins.push({ x: 58, y: 7, collected: false });
-    this.coins.push({ x: 59, y: 7, collected: false });
+    // Musical Notes / Gold Tokens
+    this.coins.push({ x: 9, y: 7, collected: false });
+    this.coins.push({ x: 12, y: 3, collected: false });
+    this.coins.push({ x: 23, y: 8, collected: false });
+    this.coins.push({ x: 57, y: 5, collected: false });
+    this.coins.push({ x: 59, y: 5, collected: false });
+    this.coins.push({ x: 65, y: 6, collected: false });
 
-    // Initial enemies
-    this.initialEnemies.push({ type: 'gloomba', x: 14 * TILE_SIZE, y: 14 * TILE_SIZE });
-    this.initialEnemies.push({ type: 'gloomba', x: 26 * TILE_SIZE, y: 14 * TILE_SIZE });
-    this.initialEnemies.push({ type: 'gloomba', x: 37 * TILE_SIZE, y: 14 * TILE_SIZE });
-    this.initialEnemies.push({ type: 'gloomba', x: 62 * TILE_SIZE, y: 14 * TILE_SIZE });
+    // Pete's Deckhand Enforcers (patrolling enemies)
+    this.initialEnemies.push({ type: 'gloomba', x: 14 * TILE_SIZE, y: 11 * TILE_SIZE });
+    this.initialEnemies.push({ type: 'gloomba', x: 26 * TILE_SIZE, y: 11 * TILE_SIZE });
+    this.initialEnemies.push({ type: 'gloomba', x: 36 * TILE_SIZE, y: 11 * TILE_SIZE });
+    this.initialEnemies.push({ type: 'gloomba', x: 61 * TILE_SIZE, y: 11 * TILE_SIZE });
   }
 
-  private buildPipe(x: number, height: number) {
-    const topY = 15 - height;
-    for (let y = topY; y < 15; y++) {
+  private buildFunnel(x: number, height: number) {
+    const topY = 12 - height;
+    for (let y = topY; y < 12; y++) {
       this.tiles[y][x] = TileType.SOLID;
       this.tiles[y][x + 1] = TileType.SOLID;
     }
@@ -128,8 +134,8 @@ export class Level {
     for (let i = 0; i < steps; i++) {
       const x = startX + i;
       const height = ascend ? i + 1 : steps - i;
-      const topY = 15 - height;
-      for (let y = topY; y < 15; y++) {
+      const topY = 12 - height;
+      for (let y = topY; y < 12; y++) {
         this.tiles[y][x] = TileType.SOLID;
       }
     }
@@ -162,6 +168,7 @@ export class Level {
   }
 
   updateCrumbling(dt: number) {
+    this.waterAnimTimer += dt;
     for (const [key, state] of this.dynamicState.entries()) {
       if (state.crumbleTimer !== undefined && !state.crumbled) {
         state.crumbleTimer -= dt;
@@ -178,6 +185,7 @@ export class Level {
     const startTileX = Math.max(0, Math.floor(cameraX / TILE_SIZE));
     const endTileX = Math.min(this.width, Math.ceil((cameraX + viewportWidth) / TILE_SIZE));
 
+    // Render Tiles
     for (let y = 0; y < this.height; y++) {
       for (let x = startTileX; x < endTileX; x++) {
         const tile = this.tiles[y][x];
@@ -186,236 +194,404 @@ export class Level {
 
         switch (tile) {
           case TileType.SOLID:
-            this.renderSolidBlock(ctx, px, py);
+            this.renderSteamboatDeck(ctx, px, py, y);
             break;
 
           case TileType.QUESTION:
-            this.renderQuestionBlock(ctx, px, py);
+            this.renderCargoCrate(ctx, px, py);
             break;
 
           case TileType.SPIKE:
-            this.renderSpike(ctx, px, py);
+            this.renderAnchorSpike(ctx, px, py);
             break;
 
           case TileType.CRUMBLING:
-            this.renderCrumblingBlock(ctx, px, py, `${x},${y}`);
+            this.renderDriftwoodBlock(ctx, px, py, `${x},${y}`);
             break;
 
           case TileType.SPRING:
-            this.renderSpring(ctx, px, py);
+            this.renderLifebuoySpring(ctx, px, py);
             break;
 
           case TileType.CHECKPOINT:
-            this.renderCheckpoint(ctx, px, py);
+            this.renderShipBell(ctx, px, py);
             break;
 
           case TileType.FLAGPOLE:
-            this.renderFlagpole(ctx, px, py);
+            this.renderSteamMast(ctx, px, py);
             break;
 
           case TileType.KAIZO:
             if (this.isKaizoRevealed(x, y)) {
-              this.renderRevealedKaizo(ctx, px, py);
+              this.renderRevealedFilmKaizo(ctx, px, py);
             }
             break;
         }
       }
     }
 
-    // Render Coins
+    // Render Churning Mississippi River Water in Pits (Rows 13-14)
+    this.renderRiverWater(ctx, cameraX, viewportWidth);
+
+    // Render Golden Musical Notes / Steamboat Tokens
     this.coins.forEach(c => {
       if (!c.collected) {
         const cx = c.x * TILE_SIZE + 16 - cameraX;
         const cy = c.y * TILE_SIZE + 16;
         if (cx > -32 && cx < viewportWidth + 32) {
-          this.renderCoin(ctx, cx, cy);
+          this.renderMusicNoteCoin(ctx, cx, cy);
         }
       }
     });
   }
 
-  private renderSolidBlock(ctx: CanvasRenderingContext2D, px: number, py: number) {
-    // Retro Brick
-    ctx.fillStyle = '#b84218';
-    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-    ctx.fillStyle = '#db6c42';
-    ctx.fillRect(px + 2, py + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+  /**
+   * Render Multi-layered Steamboat Deck:
+   * y=12: Top polished oak deck with brass pegs & plank borders
+   * y=13: Mid riverboat timber hull with iron bands
+   * y=14: Keel foundation timbers
+   */
+  private renderSteamboatDeck(ctx: CanvasRenderingContext2D, px: number, py: number, tileY: number) {
+    if (tileY === 12) {
+      // Top Deck Plank (Polished Warm Oak with brass rivets)
+      ctx.fillStyle = '#c89558';
+      ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
 
-    // Brick mortar lines
-    ctx.fillStyle = '#4a1506';
-    ctx.fillRect(px, py + 15, TILE_SIZE, 2);
-    ctx.fillRect(px + 15, py, 2, 15);
-    ctx.fillRect(px + 8, py + 16, 2, 16);
+      // Plank grooves (wood decking strips)
+      ctx.fillStyle = '#e2b378';
+      ctx.fillRect(px, py + 2, TILE_SIZE, 6);
+      ctx.fillRect(px, py + 12, TILE_SIZE, 6);
+      ctx.fillRect(px, py + 22, TILE_SIZE, 6);
+
+      // Dark seam lines between deck boards
+      ctx.fillStyle = '#5c3818';
+      ctx.fillRect(px, py, TILE_SIZE, 2);
+      ctx.fillRect(px, py + 10, TILE_SIZE, 2);
+      ctx.fillRect(px, py + 20, TILE_SIZE, 2);
+      ctx.fillRect(px, py + 30, TILE_SIZE, 2);
+
+      // Brass deck nail rivets
+      ctx.fillStyle = '#fbbf24';
+      ctx.beginPath();
+      ctx.arc(px + 6, py + 6, 2, 0, Math.PI * 2);
+      ctx.arc(px + 26, py + 6, 2, 0, Math.PI * 2);
+      ctx.arc(px + 16, py + 16, 2, 0, Math.PI * 2);
+      ctx.arc(px + 6, py + 26, 2, 0, Math.PI * 2);
+      ctx.arc(px + 26, py + 26, 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Top brass trim railing edge
+      ctx.fillStyle = '#d97706';
+      ctx.fillRect(px, py, TILE_SIZE, 2);
+    } else if (tileY === 13) {
+      // Mid Hull Planking (Darker Steamboat Cedar)
+      ctx.fillStyle = '#8b5a2b';
+      ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+
+      // Horizontal hull beams
+      ctx.fillStyle = '#6f421a';
+      ctx.fillRect(px, py + 15, TILE_SIZE, 2);
+
+      // Black iron hull strapping
+      ctx.fillStyle = '#1c1917';
+      ctx.fillRect(px + 14, py, 4, TILE_SIZE);
+
+      // Iron rivet bolts
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(px + 15, py + 6, 2, 2);
+      ctx.fillRect(px + 15, py + 22, 2, 2);
+    } else {
+      // Lower Hull Keel (Submerged Deep Timber)
+      ctx.fillStyle = '#4a2c11';
+      ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+
+      // Waterline moss / barnacle green accent
+      ctx.fillStyle = '#065f46';
+      ctx.fillRect(px, py, TILE_SIZE, 3);
+    }
   }
 
-  private renderQuestionBlock(ctx: CanvasRenderingContext2D, px: number, py: number) {
-    ctx.fillStyle = '#f8b800';
+  /**
+   * Brass Steam Cargo Crate with anchor stencil
+   */
+  private renderCargoCrate(ctx: CanvasRenderingContext2D, px: number, py: number) {
+    // Rich Brass Body
+    ctx.fillStyle = '#b45309';
     ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-    ctx.fillStyle = '#fcde5c';
+    ctx.fillStyle = '#f59e0b';
     ctx.fillRect(px + 2, py + 2, TILE_SIZE - 4, TILE_SIZE - 4);
 
-    // Screws in corners
-    ctx.fillStyle = '#8a5800';
-    ctx.fillRect(px + 4, py + 4, 2, 2);
-    ctx.fillRect(px + 26, py + 4, 2, 2);
-    ctx.fillRect(px + 4, py + 26, 2, 2);
-    ctx.fillRect(px + 26, py + 26, 2, 2);
+    // Corner brass braces
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(px + 2, py + 2, 6, 6);
+    ctx.fillRect(px + 24, py + 2, 6, 6);
+    ctx.fillRect(px + 2, py + 24, 6, 6);
+    ctx.fillRect(px + 24, py + 24, 6, 6);
 
-    // '?' symbol
-    ctx.fillStyle = '#7a4200';
-    ctx.font = 'bold 20px monospace';
+    // Glowing question mark / gear
+    ctx.fillStyle = '#fef3c7';
+    ctx.font = 'bold 18px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('?', px + 16, py + 24);
+    ctx.fillText('?', px + 16, py + 23);
   }
 
-  private renderSpike(ctx: CanvasRenderingContext2D, px: number, py: number) {
-    ctx.fillStyle = '#dcdcdc';
+  /**
+   * Rusty Iron Anchor Spike Hazard
+   */
+  private renderAnchorSpike(ctx: CanvasRenderingContext2D, px: number, py: number) {
+    // Anchor shaft
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(px + 14, py + 6, 4, 20);
+
+    // Fluke curve
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 3;
     ctx.beginPath();
-    // 3 sharp triangles
-    ctx.moveTo(px, py + TILE_SIZE);
-    ctx.lineTo(px + 5, py);
-    ctx.lineTo(px + 10, py + TILE_SIZE);
-    ctx.lineTo(px + 16, py);
-    ctx.lineTo(px + 22, py + TILE_SIZE);
-    ctx.lineTo(px + 27, py);
-    ctx.lineTo(px + TILE_SIZE, py + TILE_SIZE);
+    ctx.arc(px + 16, py + 20, 10, 0.2, Math.PI - 0.2, false);
+    ctx.stroke();
+
+    // Sharp anchor tips
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.moveTo(px + 6, py + 14);
+    ctx.lineTo(px + 3, py + 6);
+    ctx.lineTo(px + 9, py + 12);
     ctx.closePath();
     ctx.fill();
 
-    ctx.strokeStyle = '#ef4444';
-    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(px + 26, py + 14);
+    ctx.lineTo(px + 29, py + 6);
+    ctx.lineTo(px + 23, py + 12);
+    ctx.closePath();
+    ctx.fill();
+
+    // Ring on top
+    ctx.strokeStyle = '#dc2626';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(px + 16, py + 4, 3, 0, Math.PI * 2);
     ctx.stroke();
   }
 
-  private renderCrumblingBlock(ctx: CanvasRenderingContext2D, px: number, py: number, key: string) {
+  /**
+   * Rotting river driftwood block that shakes and splinters
+   */
+  private renderDriftwoodBlock(ctx: CanvasRenderingContext2D, px: number, py: number, key: string) {
     const state = this.dynamicState.get(key);
     const isShaking = state?.crumbleTimer !== undefined && !state?.crumbled;
 
-    // Shake offset when actively crumbling
-    const shakeX = isShaking ? (Math.random() - 0.5) * 4 : 0;
+    const shakeX = isShaking ? (Math.random() - 0.5) * 5 : 0;
     const shakeY = isShaking ? (Math.random() - 0.5) * 3 : 0;
 
-    ctx.fillStyle = isShaking ? '#a8a29e' : '#78716c';
+    // Waterlogged grey-green driftwood
+    ctx.fillStyle = isShaking ? '#71717a' : '#52525b';
     ctx.fillRect(px + shakeX, py + shakeY, TILE_SIZE, TILE_SIZE);
 
-    // Crack lines
-    ctx.strokeStyle = '#292524';
+    // Rot cracks
+    ctx.strokeStyle = '#18181b';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(px + shakeX + 4, py + shakeY + 4);
-    ctx.lineTo(px + shakeX + 16, py + shakeY + 16);
-    ctx.lineTo(px + shakeX + 28, py + shakeY + 8);
+    ctx.moveTo(px + shakeX + 3, py + shakeY + 5);
+    ctx.lineTo(px + shakeX + 15, py + shakeY + 18);
+    ctx.lineTo(px + shakeX + 29, py + shakeY + 9);
     ctx.stroke();
 
-    // More cracks when about to collapse
     if (isShaking) {
-      ctx.strokeStyle = '#ef4444';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(px + shakeX + 8, py + shakeY + 24);
-      ctx.lineTo(px + shakeX + 22, py + shakeY + 18);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.moveTo(px + shakeX + 20, py + shakeY + 28);
-      ctx.lineTo(px + shakeX + 30, py + shakeY + 12);
-      ctx.stroke();
-
-      // Danger indicator
+      // Danger exclamation
       ctx.fillStyle = '#ef4444';
-      ctx.font = 'bold 10px monospace';
+      ctx.font = 'bold 12px monospace';
       ctx.textAlign = 'center';
-      ctx.fillText('!', px + 16, py - 4);
+      ctx.fillText('SPLIT!', px + 16, py - 4);
     }
   }
 
-  private renderSpring(ctx: CanvasRenderingContext2D, px: number, py: number) {
-    // Base platform
-    ctx.fillStyle = '#1e3a5f';
-    ctx.fillRect(px + 2, py + 22, 28, 10);
-
-    // Spring coil visual
-    ctx.strokeStyle = '#38bdf8';
+  /**
+   * Nautical Lifebuoy Springboard (Red & White Life Ring on brass coil)
+   */
+  private renderLifebuoySpring(ctx: CanvasRenderingContext2D, px: number, py: number) {
+    // Brass spring coil
+    ctx.strokeStyle = '#f59e0b';
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(px + 6, py + 22);
-    ctx.lineTo(px + 10, py + 14);
-    ctx.lineTo(px + 14, py + 22);
-    ctx.lineTo(px + 18, py + 14);
-    ctx.lineTo(px + 22, py + 22);
-    ctx.lineTo(px + 26, py + 14);
+    ctx.moveTo(px + 8, py + 26);
+    ctx.lineTo(px + 14, py + 18);
+    ctx.lineTo(px + 18, py + 26);
+    ctx.lineTo(px + 24, py + 18);
     ctx.stroke();
 
-    // Spring pad on top
-    ctx.fillStyle = '#0ea5e9';
-    ctx.fillRect(px + 4, py + 10, 24, 6);
-
-    // Arrow indicator
-    ctx.fillStyle = '#7dd3fc';
+    // Red & White Life Ring Buoy
+    ctx.fillStyle = '#ef4444';
     ctx.beginPath();
-    ctx.moveTo(px + 16, py + 2);
-    ctx.lineTo(px + 10, py + 9);
-    ctx.lineTo(px + 22, py + 9);
-    ctx.closePath();
+    ctx.arc(px + 16, py + 12, 11, 0, Math.PI * 2);
+    ctx.fill();
+
+    // White segments
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(px + 16, py + 12, 11, -Math.PI / 4, Math.PI / 4);
+    ctx.lineTo(px + 16, py + 12);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.arc(px + 16, py + 12, 11, 3 * Math.PI / 4, 5 * Math.PI / 4);
+    ctx.lineTo(px + 16, py + 12);
+    ctx.fill();
+
+    // Inner hole
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath();
+    ctx.arc(px + 16, py + 12, 4, 0, Math.PI * 2);
     ctx.fill();
   }
 
-  private renderCheckpoint(ctx: CanvasRenderingContext2D, px: number, py: number) {
-    ctx.fillStyle = '#a8a29e';
-    ctx.fillRect(px + 14, py, 4, TILE_SIZE);
-    ctx.fillStyle = '#22c55e';
+  /**
+   * Polished Brass Ship Bell (Checkpoint)
+   */
+  private renderShipBell(ctx: CanvasRenderingContext2D, px: number, py: number) {
+    // Bell bracket
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(px + 14, py, 4, 8);
+
+    // Golden Bell body
+    ctx.fillStyle = '#f59e0b';
     ctx.beginPath();
-    ctx.moveTo(px + 18, py + 4);
-    ctx.lineTo(px + 30, py + 12);
-    ctx.lineTo(px + 18, py + 20);
+    ctx.moveTo(px + 10, py + 8);
+    ctx.quadraticCurveTo(px + 16, py + 6, px + 22, py + 8);
+    ctx.lineTo(px + 26, py + 22);
+    ctx.lineTo(px + 6, py + 22);
     ctx.closePath();
     ctx.fill();
+
+    // Clapper
+    ctx.fillStyle = '#fbbf24';
+    ctx.beginPath();
+    ctx.arc(px + 16, py + 24, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Bell chime ring waves
+    ctx.strokeStyle = '#22c55e';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(px + 16, py + 16, 12, -0.6, 0.6);
+    ctx.arc(px + 16, py + 16, 12, Math.PI - 0.6, Math.PI + 0.6);
+    ctx.stroke();
   }
 
-  private renderFlagpole(ctx: CanvasRenderingContext2D, px: number, py: number) {
-    ctx.fillStyle = '#f5f5f5';
-    ctx.fillRect(px + 14, py, 4, TILE_SIZE);
+  /**
+   * Steamboat Smoke Funnel Mast with Riverboat Flag (Goal)
+   */
+  private renderSteamMast(ctx: CanvasRenderingContext2D, px: number, py: number) {
+    // Black steel steam funnel mast
+    ctx.fillStyle = '#1c1917';
+    ctx.fillRect(px + 12, py, 8, TILE_SIZE);
 
-    if (py % 100 < 32) {
+    // Brass flanged rings on funnel
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(px + 10, py + 4, 12, 3);
+    ctx.fillRect(px + 10, py + 20, 12, 3);
+
+    // Top mast with waving Riverboat Pennant
+    if (py % 120 < 32) {
+      // Golden pilot wheel finial on top
       ctx.fillStyle = '#eab308';
       ctx.beginPath();
-      ctx.arc(px + 16, py + 4, 6, 0, Math.PI * 2);
+      ctx.arc(px + 16, py - 4, 8, 0, Math.PI * 2);
       ctx.fill();
 
-      // Flag
+      // Waving Red & White Steamboat Pennant
       ctx.fillStyle = '#ef4444';
       ctx.beginPath();
-      ctx.moveTo(px + 14, py + 8);
-      ctx.lineTo(px - 16, py + 16);
-      ctx.lineTo(px + 14, py + 24);
+      ctx.moveTo(px + 16, py);
+      ctx.lineTo(px + 44, py + 8);
+      ctx.lineTo(px + 16, py + 16);
       ctx.closePath();
       ctx.fill();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 9px monospace';
+      ctx.fillText('1928', px + 20, py + 11);
     }
   }
 
-  private renderRevealedKaizo(ctx: CanvasRenderingContext2D, px: number, py: number) {
-    ctx.fillStyle = '#1e1b4b';
+  /**
+   * Phantom 1928 Film Reel Kaizo Block
+   */
+  private renderRevealedFilmKaizo(ctx: CanvasRenderingContext2D, px: number, py: number) {
+    ctx.fillStyle = '#0f172a';
     ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-    ctx.strokeStyle = '#a855f7';
+
+    // Film strip sprockets
+    ctx.fillStyle = '#f5f0e8';
+    ctx.fillRect(px + 2, py + 2, 4, 4);
+    ctx.fillRect(px + 2, py + 14, 4, 4);
+    ctx.fillRect(px + 2, py + 26, 4, 4);
+    ctx.fillRect(px + 26, py + 2, 4, 4);
+    ctx.fillRect(px + 26, py + 14, 4, 4);
+    ctx.fillRect(px + 26, py + 26, 4, 4);
+
+    // Purple glitch neon border
+    ctx.strokeStyle = '#c084fc';
     ctx.lineWidth = 2;
     ctx.strokeRect(px + 1, py + 1, TILE_SIZE - 2, TILE_SIZE - 2);
 
-    ctx.fillStyle = '#c084fc';
-    ctx.font = 'bold 12px monospace';
+    ctx.fillStyle = '#e9d5ff';
+    ctx.font = 'bold 10px monospace';
     ctx.textAlign = 'center';
-    ctx.fillText('KAIZO', px + 16, py + 20);
+    ctx.fillText('KAIZO', px + 16, py + 19);
   }
 
-  private renderCoin(ctx: CanvasRenderingContext2D, cx: number, cy: number) {
-    ctx.fillStyle = '#fbbf24';
+  /**
+   * Churning Mississippi River Water in Pits
+   */
+  private renderRiverWater(ctx: CanvasRenderingContext2D, cameraX: number, viewportWidth: number) {
+    const waveOffset = Math.sin(this.waterAnimTimer * 4) * 4;
+    const waterY = 12 * TILE_SIZE + 8;
+
+    ctx.save();
+    // Deep Mississippi Teal / Blue
+    ctx.fillStyle = '#0284c7';
+    ctx.fillRect(0, waterY, viewportWidth, viewportHeight - waterY);
+
+    // Foam Wave Crests
+    ctx.strokeStyle = '#e0f2fe';
+    ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.ellipse(cx, cy, 7, 10, 0, 0, Math.PI * 2);
+    for (let x = 0; x < viewportWidth; x += 16) {
+      const wx = x;
+      const wy = waterY + Math.sin((x + cameraX) * 0.1 + this.waterAnimTimer * 5) * 3;
+      if (x === 0) ctx.moveTo(wx, wy);
+      else ctx.lineTo(wx, wy);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /**
+   * Golden Musical Note / Brass Riverboat Coin
+   */
+  private renderMusicNoteCoin(ctx: CanvasRenderingContext2D, cx: number, cy: number) {
+    ctx.save();
+    // Golden Glow
+    ctx.fillStyle = '#f59e0b';
+    ctx.beginPath();
+    ctx.arc(cx - 3, cy + 4, 5, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = '#d97706';
-    ctx.lineWidth = 1.5;
+
+    // Stem & Flag
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(cx + 1, cy + 4);
+    ctx.lineTo(cx + 1, cy - 8);
+    ctx.quadraticCurveTo(cx + 6, cy - 7, cx + 8, cy - 3);
     ctx.stroke();
 
-    ctx.fillStyle = '#fef3c7';
-    ctx.fillRect(cx - 2, cy - 6, 4, 12);
+    // Sparkle
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(cx - 4, cy + 2, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 }

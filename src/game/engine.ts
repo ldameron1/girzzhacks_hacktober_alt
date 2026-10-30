@@ -56,7 +56,7 @@ export class GameEngine {
     this.callbacks = callbacks;
     this.audio = new AudioManager();
     this.level = new Level();
-    this.player = new Player(3 * TILE_SIZE, 13 * TILE_SIZE);
+    this.player = new Player(3 * TILE_SIZE, 11 * TILE_SIZE);
     this.telemetry = new TelemetryRecorder();
     this.heatmap = new HeatmapRenderer();
     this.bot = new AutonomousPlayerBot();
@@ -359,25 +359,80 @@ export class GameEngine {
   }
 
   private renderBackground() {
-    // Dark ominous sky with gradient
+    const time = performance.now() / 1000;
+
+    // 1928 Vintage Mississippi River Twilight Sky (Warm parchment-amber to vintage cartoon dusk)
     const skyGrad = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
-    skyGrad.addColorStop(0, '#090d16');
-    skyGrad.addColorStop(0.7, '#1e102a');
-    skyGrad.addColorStop(1, '#2b0938');
+    skyGrad.addColorStop(0, '#1c1917');   // Dark vintage ink
+    skyGrad.addColorStop(0.4, '#292524'); // River mist
+    skyGrad.addColorStop(0.75, '#451a03');// Warm sepia sunset
+    skyGrad.addColorStop(1, '#0c4a6e');   // Deep river twilight
     this.ctx.fillStyle = skyGrad;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Parallax Kaizo mountains
-    this.ctx.fillStyle = '#160826';
-    for (let i = -1; i < 15; i++) {
-      const mx = (i * 180) - (this.cameraX * 0.2) % 180;
+    // Billowing white cartoon steam puffs from the ship's engine
+    this.ctx.fillStyle = 'rgba(245, 240, 232, 0.25)';
+    for (let s = 0; s < 6; s++) {
+      const sx = ((s * 150) - (this.cameraX * 0.15) + (time * 30)) % (this.canvas.width + 120) - 60;
+      const sy = 40 + Math.sin(time * 2 + s) * 12;
+      const rad = 24 + (s % 3) * 10;
       this.ctx.beginPath();
-      this.ctx.moveTo(mx, this.canvas.height);
-      this.ctx.lineTo(mx + 90, this.canvas.height - 180);
-      this.ctx.lineTo(mx + 180, this.canvas.height);
+      this.ctx.arc(sx, sy, rad, 0, Math.PI * 2);
+      this.ctx.arc(sx + 18, sy - 8, rad * 0.8, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
+
+    // Distant misty Mississippi riverbanks (willow tree mounds)
+    this.ctx.fillStyle = '#1e1b18';
+    for (let i = -1; i < 12; i++) {
+      const mx = (i * 160) - (this.cameraX * 0.2) % 160;
+      this.ctx.beginPath();
+      this.ctx.moveTo(mx, 12 * TILE_SIZE);
+      this.ctx.quadraticCurveTo(mx + 80, 12 * TILE_SIZE - 90, mx + 160, 12 * TILE_SIZE);
       this.ctx.closePath();
       this.ctx.fill();
     }
+
+    // Steamboat Giant Paddlewheel (spinning on the left of the ship!)
+    const wheelX = 60 - (this.cameraX * 0.05);
+    const wheelY = 12 * TILE_SIZE + 10;
+    const wheelRadius = 55;
+    const wheelAngle = time * 3;
+
+    this.ctx.save();
+    this.ctx.translate(wheelX, wheelY);
+    this.ctx.rotate(wheelAngle);
+
+    // Outer wheel ring (Crimson riverboat steel)
+    this.ctx.strokeStyle = '#dc2626';
+    this.ctx.lineWidth = 4;
+    this.ctx.beginPath();
+    this.ctx.arc(0, 0, wheelRadius, 0, Math.PI * 2);
+    this.ctx.stroke();
+
+    // Wheel spokes and timber paddle blades
+    for (let a = 0; a < 8; a++) {
+      const spokeAngle = (a * Math.PI) / 4;
+      this.ctx.strokeStyle = '#f59e0b';
+      this.ctx.lineWidth = 3;
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, 0);
+      this.ctx.lineTo(Math.cos(spokeAngle) * wheelRadius, Math.sin(spokeAngle) * wheelRadius);
+      this.ctx.stroke();
+
+      // Red paddle blade on tip
+      this.ctx.fillStyle = '#ef4444';
+      const bx = Math.cos(spokeAngle) * (wheelRadius - 6);
+      const by = Math.sin(spokeAngle) * (wheelRadius - 6);
+      this.ctx.fillRect(bx - 4, by - 4, 8, 8);
+    }
+
+    // Brass hub center
+    this.ctx.fillStyle = '#fbbf24';
+    this.ctx.beginPath();
+    this.ctx.arc(0, 0, 10, 0, Math.PI * 2);
+    this.ctx.fill();
+    this.ctx.restore();
   }
 
   private renderGhostPath() {

@@ -213,30 +213,47 @@ export class AudioManager {
     if (this.isMuted || this.bgmInterval) return;
     this.initCtx();
 
-    // 8-bit dark bassline pattern for Kaizo tension
+    // 1928 Steamboat Willie whistle motif + jaunty ragtime bassline
     const bassline = [110, 110, 130.81, 110, 146.83, 130.81, 110, 98];
+    // Iconic 1928 cartoon whistle notes (G4, C5, D5, E5, G5, E5, D5, C5...)
+    const whistleNotes = [392, 0, 523.25, 0, 587.33, 659.25, 0, 783.99, 659.25, 0, 587.33, 523.25, 0, 392, 523.25, 0];
     const tempoMs = 180;
 
     this.bgmInterval = window.setInterval(() => {
       if (this.isMuted || !this.ctx) return;
-      const freq = bassline[this.bgmStep % bassline.length];
+      const bassFreq = bassline[this.bgmStep % bassline.length];
+      const whistleFreq = whistleNotes[this.bgmStep % whistleNotes.length];
       this.bgmStep++;
 
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-
-      osc.type = 'triangle';
       const now = this.ctx.currentTime;
-      osc.frequency.setValueAtTime(freq, now);
 
-      gain.gain.setValueAtTime(0.04, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      // 1. Bassline pulse
+      const oscBass = this.ctx.createOscillator();
+      const gainBass = this.ctx.createGain();
+      oscBass.type = 'triangle';
+      oscBass.frequency.setValueAtTime(bassFreq, now);
+      gainBass.gain.setValueAtTime(0.04, now);
+      gainBass.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      oscBass.connect(gainBass);
+      gainBass.connect(this.ctx.destination);
+      oscBass.start(now);
+      oscBass.stop(now + 0.15);
 
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-
-      osc.start(now);
-      osc.stop(now + 0.15);
+      // 2. Steamboat Willie Whistle (Pure sine wave with steam vibrato)
+      if (whistleFreq > 0) {
+        const oscWhistle = this.ctx.createOscillator();
+        const gainWhistle = this.ctx.createGain();
+        oscWhistle.type = 'sine';
+        oscWhistle.frequency.setValueAtTime(whistleFreq, now);
+        // Slight cartoon whistle pitch glide
+        oscWhistle.frequency.exponentialRampToValueAtTime(whistleFreq * 1.02, now + 0.14);
+        gainWhistle.gain.setValueAtTime(0.06, now);
+        gainWhistle.gain.exponentialRampToValueAtTime(0.005, now + 0.15);
+        oscWhistle.connect(gainWhistle);
+        gainWhistle.connect(this.ctx.destination);
+        oscWhistle.start(now);
+        oscWhistle.stop(now + 0.15);
+      }
     }, tempoMs);
   }
 }
