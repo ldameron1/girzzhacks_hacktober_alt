@@ -14,4 +14,4 @@ if [[ ! -f dist/index.html ]]; then
   npm run build
 fi
 
-exec env NODE_ENV=production PORT="$port" npm run server
+exec /usr/bin/env NODE_ENV=production PORT="$port" npm run server

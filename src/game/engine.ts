@@ -459,10 +459,10 @@ export class GameEngine {
     // horizon that makes the deckhand silhouette read like a hand-inked cel.
     if (!this.backgroundGradient || this.backgroundGradientHeight !== this.canvas.height) {
       this.backgroundGradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
-      this.backgroundGradient.addColorStop(0, '#101827');   // Ink-blue night
-      this.backgroundGradient.addColorStop(0.42, '#26324a'); // Indigo haze
-      this.backgroundGradient.addColorStop(0.78, '#704332'); // Sepia horizon
-      this.backgroundGradient.addColorStop(1, '#102f45');   // River shadow
+      this.backgroundGradient.addColorStop(0, '#111317');   // Ink-black night
+      this.backgroundGradient.addColorStop(0.42, '#3c4148'); // Silver nitrate haze
+      this.backgroundGradient.addColorStop(0.78, '#76716b'); // Faded film horizon
+      this.backgroundGradient.addColorStop(1, '#171b20');   // River shadow
       this.backgroundGradientHeight = this.canvas.height;
     }
     const skyGrad = this.backgroundGradient;
@@ -470,22 +470,22 @@ export class GameEngine {
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
     // A restrained night sky gives the deck a clear setting instead of a flat fill.
-    this.ctx.fillStyle = 'rgba(255, 235, 180, 0.7)';
+    this.ctx.fillStyle = 'rgba(248, 248, 238, 0.72)';
     const stars = [[72, 34], [164, 58], [286, 28], [418, 72], [566, 42], [704, 66]];
     stars.forEach(([sx, sy], index) => {
       const twinkle = 1 + Math.sin(time * 1.5 + index) * 0.35;
       this.ctx.fillRect(sx - (this.cameraX * 0.04) % 800, sy, twinkle * 2, twinkle * 2);
     });
 
-    this.ctx.fillStyle = 'rgba(255, 224, 160, 0.18)';
+    this.ctx.fillStyle = 'rgba(255, 255, 244, 0.18)';
     this.ctx.beginPath();
     this.ctx.arc(this.canvas.width - 130, 86, 42, 0, Math.PI * 2);
     this.ctx.fill();
-    this.ctx.fillStyle = 'rgba(255, 238, 190, 0.9)';
+    this.ctx.fillStyle = 'rgba(255, 255, 244, 0.9)';
     this.ctx.beginPath();
     this.ctx.arc(this.canvas.width - 140, 78, 28, 0, Math.PI * 2);
     this.ctx.fill();
-    this.ctx.fillStyle = '#26324a';
+    this.ctx.fillStyle = '#3c4148';
     this.ctx.beginPath();
     this.ctx.arc(this.canvas.width - 128, 69, 27, 0, Math.PI * 2);
     this.ctx.fill();
@@ -493,7 +493,7 @@ export class GameEngine {
     // Long moonlit bands suggest open water without competing with gameplay.
     this.ctx.save();
     this.ctx.globalAlpha = 0.09;
-    this.ctx.fillStyle = '#f6d88c';
+    this.ctx.fillStyle = '#f5f1d8';
     this.ctx.beginPath();
     this.ctx.moveTo(this.canvas.width - 190, 104);
     this.ctx.lineTo(this.canvas.width - 60, 104);
@@ -505,7 +505,7 @@ export class GameEngine {
 
     // Original Halloween silhouettes: simple bats and river fog, not
     // references to any copyrighted character or asset.
-    this.ctx.fillStyle = 'rgba(10, 15, 25, 0.82)';
+    this.ctx.fillStyle = 'rgba(8, 9, 11, 0.88)';
     const bats = [[150, 112], [380, 92], [650, 128]];
     bats.forEach(([bx, by], index) => {
       const drift = Math.sin(time * 1.4 + index) * 5;
@@ -517,6 +517,55 @@ export class GameEngine {
       this.ctx.quadraticCurveTo(bx + 9, by - 8 + drift, bx, by + drift);
       this.ctx.fill();
     });
+
+    // Public-domain Halloween silhouettes: original procedural ghosts,
+    // pumpkins, and a tiny skeleton scarecrow. They are intentionally
+    // geometric so the scene reads like an early animation title card.
+    const ghostSpots = [[255, 142], [530, 176]];
+    ghostSpots.forEach(([gx, gy], index) => {
+      const bob = Math.sin(time * 1.2 + index) * 4;
+      this.ctx.fillStyle = 'rgba(242, 242, 232, 0.68)';
+      this.ctx.beginPath();
+      this.ctx.arc(gx, gy + bob, 13, Math.PI, 0);
+      this.ctx.lineTo(gx + 13, gy + bob + 19);
+      this.ctx.lineTo(gx + 7, gy + bob + 14);
+      this.ctx.lineTo(gx, gy + bob + 20);
+      this.ctx.lineTo(gx - 7, gy + bob + 14);
+      this.ctx.lineTo(gx - 13, gy + bob + 19);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.fillStyle = '#25282d';
+      this.ctx.fillRect(gx - 6, gy + bob - 1, 3, 5);
+      this.ctx.fillRect(gx + 3, gy + bob - 1, 3, 5);
+    });
+
+    const pumpkins = [[70, 244], [736, 230]];
+    pumpkins.forEach(([px, py]) => {
+      this.ctx.fillStyle = '#c9c6b8';
+      this.ctx.beginPath();
+      this.ctx.ellipse(px, py, 15, 11, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.fillStyle = '#24272b';
+      this.ctx.fillRect(px - 2, py - 15, 4, 5);
+      this.ctx.beginPath();
+      this.ctx.moveTo(px - 8, py - 1);
+      this.ctx.lineTo(px - 2, py + 4);
+      this.ctx.lineTo(px + 4, py - 1);
+      this.ctx.lineTo(px + 10, py + 4);
+      this.ctx.stroke();
+    });
+
+    // A skeletal deckhand silhouette keeps the Halloween cue legible at a
+    // distance without borrowing any named character design.
+    this.ctx.strokeStyle = 'rgba(235, 235, 224, 0.58)';
+    this.ctx.lineWidth = 3;
+    this.ctx.beginPath();
+    this.ctx.arc(430, 205, 8, 0, Math.PI * 2);
+    this.ctx.moveTo(430, 213); this.ctx.lineTo(430, 237);
+    this.ctx.moveTo(419, 220); this.ctx.lineTo(441, 220);
+    this.ctx.moveTo(430, 237); this.ctx.lineTo(421, 249);
+    this.ctx.moveTo(430, 237); this.ctx.lineTo(439, 249);
+    this.ctx.stroke();
 
     // Distant stern and smokestacks: a layered ink silhouette anchors the
     // setting as a riverboat rather than a generic night platform.

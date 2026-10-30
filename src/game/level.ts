@@ -247,6 +247,60 @@ export class Level {
         }
       }
     });
+
+    this.renderHalloweenDeckMarks(ctx, cameraX, startTileX, endTileX);
+  }
+
+  private renderHalloweenDeckMarks(
+    ctx: CanvasRenderingContext2D,
+    cameraX: number,
+    startTileX: number,
+    endTileX: number
+  ) {
+    // Hand-inked, non-interactive set dressing: a pumpkin lantern, a ghost
+    // pennant, and a bone pile made only from primitive canvas paths.
+    const marks = [
+      { x: 6, kind: 'pumpkin' },
+      { x: 31, kind: 'ghost' },
+      { x: 68, kind: 'bones' },
+      { x: 86, kind: 'pumpkin' }
+    ];
+    marks.forEach(({ x, kind }) => {
+      if (x < startTileX - 2 || x > endTileX + 2) return;
+      const px = x * TILE_SIZE - cameraX + 16;
+      const py = 12 * TILE_SIZE - 6;
+      ctx.save();
+      ctx.translate(px, py);
+      ctx.strokeStyle = '#f1f0df';
+      ctx.fillStyle = '#d7d5c7';
+      ctx.lineWidth = 2;
+      if (kind === 'pumpkin') {
+        ctx.beginPath();
+        ctx.ellipse(0, -9, 10, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#22252a';
+        ctx.fillRect(-2, -18, 4, 4);
+        ctx.beginPath();
+        ctx.moveTo(-6, -9); ctx.lineTo(-2, -5); ctx.lineTo(2, -9);
+        ctx.lineTo(6, -5);
+        ctx.stroke();
+      } else if (kind === 'ghost') {
+        ctx.beginPath();
+        ctx.arc(0, -16, 9, Math.PI, 0);
+        ctx.lineTo(9, -2); ctx.lineTo(4, -6); ctx.lineTo(0, -2);
+        ctx.lineTo(-4, -6); ctx.lineTo(-9, -2); ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#24272b';
+        ctx.fillRect(-4, -17, 2, 4); ctx.fillRect(2, -17, 2, 4);
+      } else {
+        ctx.beginPath();
+        ctx.moveTo(-10, -5); ctx.lineTo(-2, -13); ctx.lineTo(7, -5);
+        ctx.moveTo(-5, -10); ctx.lineTo(3, -1);
+        ctx.moveTo(5, -11); ctx.lineTo(-3, -1);
+        ctx.stroke();
+      }
+      ctx.restore();
+    });
   }
 
   /**

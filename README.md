@@ -25,6 +25,16 @@ To transform the classic 1985 platformer paradigm into an intelligent, legally d
 
 ---
 
+## 🎞️ Visual direction
+
+The presentation intentionally embraces a Steamboat Willie-era black-and-white
+riverboat language: high-contrast ink silhouettes, silver-screen contrast,
+smoke, deck planks, and moonlit water. Halloween dressing is original
+procedural canvas art built from primitives (ghosts, bats, pumpkins, bones, and
+skeleton silhouettes). It uses public-domain motifs rather than modern
+copyrighted character designs, and the audio uses original procedural cues
+instead of sampled or reproduced melodies.
+
 ## 🎮 What is GemmaKaizo?
 
 **GemmaKaizo** is a retro 16-bit precision platformer inspired by kaizo-style challenge games and managed by an adversarial AI Game Master.
