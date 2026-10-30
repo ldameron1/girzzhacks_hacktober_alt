@@ -18,6 +18,38 @@ export interface DynamicTileState {
   crumbled?: boolean;
 }
 
+export interface LevelVariant {
+  id: string;
+  name: string;
+  description: string;
+  section: string;
+  recommendedMutationFocus: string;
+}
+
+export const LEVEL_VARIANTS: readonly LevelVariant[] = [
+  {
+    id: 'midnight-run',
+    name: 'Midnight Run',
+    description: 'The original full steamboat route with all baseline hazards.',
+    section: 'baseline route',
+    recommendedMutationFocus: 'measured hazard escalation'
+  },
+  {
+    id: 'boiler-deck',
+    name: 'Boiler Deck',
+    description: 'A raised cargo section that rewards controlled jumps around the funnels.',
+    section: 'upper cargo deck',
+    recommendedMutationFocus: 'vertical route pressure'
+  },
+  {
+    id: 'captains-stairs',
+    name: "Captain's Stairs",
+    description: 'A staircase-heavy approach to the pilot house and final mast.',
+    section: 'pilot house approach',
+    recommendedMutationFocus: 'timed landing hazards'
+  }
+];
+
 export class Level {
   public width: number;
   public height: number;
@@ -28,6 +60,8 @@ export class Level {
   public checkpointX: number = 3 * TILE_SIZE;
   public checkpointY: number = 12 * TILE_SIZE - 30;
   public waterAnimTimer: number = 0;
+  public activeLevelId = 'midnight-run';
+  public metadata: LevelVariant = LEVEL_VARIANTS[0];
 
   constructor() {
     this.width = 110;
@@ -41,6 +75,39 @@ export class Level {
   }
 
   createDefaultMap() {
+    this.loadVariant('midnight-run');
+  }
+
+  static getCatalog(): readonly LevelVariant[] {
+    return LEVEL_VARIANTS;
+  }
+
+  getCatalogEntry(): LevelVariant {
+    return this.metadata;
+  }
+
+  loadVariant(levelId: string = 'midnight-run') {
+    const variant = LEVEL_VARIANTS.find(entry => entry.id === levelId) || LEVEL_VARIANTS[0];
+    this.activeLevelId = variant.id;
+    this.metadata = variant;
+    this.buildDefaultMap();
+
+    if (variant.id === 'boiler-deck') {
+      // Reuse the existing tile vocabulary: a compact upper cargo route.
+      for (let x = 30; x <= 36; x++) {
+        this.tiles[9][x] = TileType.SOLID;
+      }
+      this.tiles[8][33] = TileType.SPRING;
+      this.coins.push({ x: 33, y: 7, collected: false });
+    } else if (variant.id === 'captains-stairs') {
+      // Extend the existing stair language into a distinct final approach.
+      this.buildStairs(68, 6, true);
+      this.tiles[7][74] = TileType.CHECKPOINT;
+      this.coins.push({ x: 72, y: 5, collected: false });
+    }
+  }
+
+  private buildDefaultMap() {
     this.tiles = Array.from({ length: this.height }, () => Array(this.width).fill(TileType.EMPTY));
     this.dynamicState.clear();
     this.coins = [];

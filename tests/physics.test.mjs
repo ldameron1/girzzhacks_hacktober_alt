@@ -1,13 +1,32 @@
 import test from 'node:test';
 import assert from 'node:assert';
 import { LevelPatcher } from '../server/levelPatcher.ts';
-import { Level, TILE_SIZE } from '../src/game/level.ts';
+import { Level, LEVEL_VARIANTS, TILE_SIZE } from '../src/game/level.ts';
 
 test('Level: fresh runs start before the midpoint checkpoint', () => {
   const level = new Level();
 
   assert.strictEqual(level.checkpointX, 3 * TILE_SIZE);
   assert.strictEqual(level.checkpointY, 12 * TILE_SIZE - 30);
+});
+
+test('Level: catalog exposes safe named variants without changing the default route', () => {
+  assert.deepStrictEqual(
+    LEVEL_VARIANTS.map(variant => variant.id),
+    ['midnight-run', 'boiler-deck', 'captains-stairs']
+  );
+
+  const defaultLevel = new Level();
+  const baselineTiles = defaultLevel.tiles.map(row => [...row]);
+  defaultLevel.loadVariant('boiler-deck');
+  assert.strictEqual(defaultLevel.activeLevelId, 'boiler-deck');
+  assert.strictEqual(defaultLevel.metadata.section, 'upper cargo deck');
+  assert.notDeepStrictEqual(defaultLevel.tiles, baselineTiles);
+
+  defaultLevel.loadVariant('midnight-run');
+  assert.strictEqual(defaultLevel.activeLevelId, 'midnight-run');
+  assert.deepStrictEqual(defaultLevel.tiles, baselineTiles);
+  assert.strictEqual(defaultLevel.checkpointX, 3 * TILE_SIZE);
 });
 
 // 1. Test AABB collision math
@@ -71,6 +90,9 @@ function makeMutationLevel() {
   const level = {
     width: 20,
     height: 10,
+    levelId: 'boiler-deck',
+    levelName: 'Boiler Deck',
+    section: 'upper cargo deck',
     tiles: Array.from({ length: 10 }, () => Array(20).fill(0)),
     enemies: [],
     coins: []
@@ -108,6 +130,8 @@ for (const type of ['CRUMBLING_FLOOR', 'BOUNCE_TRAP']) {
     assert.deepStrictEqual(result.accepted, [mutation]);
     assert.deepStrictEqual(result.rejected, []);
     assert.strictEqual(result.level.tiles[5][10], expectedTile);
+    assert.strictEqual(result.level.levelId, 'boiler-deck');
+    assert.strictEqual(result.level.section, 'upper cargo deck');
   });
 }
 

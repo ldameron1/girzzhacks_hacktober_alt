@@ -11,7 +11,7 @@
     "hackathon-refresh": "bash scripts/hackathon-refresh.sh",
     "build": "vite build && cp presentation.html dist/presentation.html",
     "preview": "vite preview",
-    "test": "tsx --test tests/physics.test.mjs"
+    "test": "tsx --test tests/*.test.mjs"
   },
   "repository": {
     "type": "git",

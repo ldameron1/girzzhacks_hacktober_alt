@@ -67,7 +67,7 @@ export class GameEngine {
     this.callbacks = callbacks;
     this.audio = new AudioManager();
     this.level = new Level();
-    this.player = new Player(3 * TILE_SIZE, 11 * TILE_SIZE);
+    this.player = new Player(this.level.checkpointX, this.level.checkpointY);
     this.telemetry = new TelemetryRecorder();
     this.heatmap = new HeatmapRenderer();
     this.bot = new AutonomousPlayerBot();
@@ -99,6 +99,22 @@ export class GameEngine {
   resetAdaptiveMutations() {
     this.activeMutations = [];
     this.runGeneration++;
+  }
+
+  resetRun(levelId: string = this.level.activeLevelId) {
+    this.level.loadVariant(levelId);
+    this.resetAdaptiveMutations();
+    this.totalMutationsApplied = 0;
+    this.telemetry.reset();
+    this.player.clearConsecutiveDeaths();
+    this.player.reset(this.level.checkpointX, this.level.checkpointY);
+    this.telemetry.startNewRun(this.player.x);
+    this.resetLevelEntities();
+    this.cameraX = 0;
+    this.particles = [];
+    this.respawnTimer = 0;
+    this.deathRecorded = false;
+    this.isPaused = false;
   }
 
   private setupInputListeners() {
@@ -306,6 +322,9 @@ export class GameEngine {
         currentLevel: {
           width: this.level.width,
           height: this.level.height,
+          levelId: this.level.activeLevelId,
+          levelName: this.level.metadata.name,
+          section: this.level.metadata.section,
           tiles: this.level.tiles,
           enemies: this.level.initialEnemies,
           coins: this.level.coins.map(c => ({ x: c.x, y: c.y }))

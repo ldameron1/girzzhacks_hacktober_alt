@@ -22,6 +22,14 @@ app.use(express.json({ limit: '10mb' }));
 const gemmaArchitect = new GemmaArchitectService();
 const playerDecision = new PlayerDecisionService();
 
+function servePresentation(res: express.Response) {
+  const presentationPath = path.resolve(
+    rootDir,
+    process.env.NODE_ENV === 'production' ? 'dist/presentation.html' : 'presentation.html'
+  );
+  return res.sendFile(presentationPath);
+}
+
 // Health & Status endpoint
 app.get('/api/health', (req, res) => {
   res.json({
@@ -96,6 +104,12 @@ app.post('/api/decision', async (req, res) => {
     console.error('[API /decision] Error:', error);
     res.status(500).json({ error: error.message || 'Failed to compute action' });
   }
+});
+
+// Keep the presenter deck on the same origin as the game so it can be opened directly.
+// This route is registered before Vite and the SPA fallback in both environments.
+app.get('/present', (req, res) => {
+  servePresentation(res);
 });
 
 // Setup Vite in development or serve static in production

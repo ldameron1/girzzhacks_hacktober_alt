@@ -31,6 +31,8 @@ export interface KaizoArchitectResponse {
 export class GemmaArchitectService {
   private apiKey: string;
   private openRouterKey: string;
+  /** Set when Google rejects the key (401/403/400); skips Google calls until a new key arrives. */
+  private googleKeyInvalid = false;
 
   constructor() {
     this.apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
@@ -39,11 +41,16 @@ export class GemmaArchitectService {
 
   setApiKey(key: string) {
     this.apiKey = String(key || '').trim();
+    this.googleKeyInvalid = false;
     console.log('[GemmaArchitect] Google API key swapped at runtime:', this.apiKey ? 'configured' : 'cleared');
   }
 
   getApiKeyConfigured() {
     return !!this.apiKey;
+  }
+
+  isGoogleKeyInvalid() {
+    return this.googleKeyInvalid;
   }
 
   async analyzeAndMutate(telemetry: TelemetryPayload): Promise<KaizoArchitectResponse> {

@@ -329,8 +329,9 @@ export class Player implements Box {
   }
 
   /**
-   * Original moonlit deckhand sprite: a compact brass-and-navy silhouette
-   * designed for this steamboat setting without imitating a known character.
+   * Generic 1928 rubber-hose steamboat deckhand in the public-domain
+   * cartoon style of the era: solid ink head with round ears, cream face,
+   * pillbox sailor cap, white shorts, hose limbs, gloves and big shoes.
    */
   private drawDeckhand(ctx: CanvasRenderingContext2D, px: number, py: number, shocked: boolean) {
     ctx.save();
@@ -342,63 +343,185 @@ export class Player implements Box {
       py = 0;
     }
 
-    // A compact ink keyline keeps the deckhand readable against moonlit fog.
-    ctx.fillStyle = 'rgba(5, 12, 18, 0.82)';
-    ctx.fillRect(px + 2, py + 2, 18, 27);
-    ctx.fillRect(px - 1, py + 24, 25, 5);
+    const moving = this.onGround && Math.abs(this.vx) > 20;
+    const swing = moving ? Math.sin(this.animTimer * 14) : 0;
+    const armSwing = moving ? Math.sin(this.animTimer * 14 + Math.PI) : 0;
+    const bob = moving ? Math.abs(Math.sin(this.animTimer * 14)) * 1.5 : 0;
+    const airborneLimb = !this.onGround && !shocked;
 
-    // Brass cap and shadowed faceplate.
-    ctx.fillStyle = '#172b35';
-    ctx.fillRect(px + 4, py + 3, 14, 10);
-    ctx.fillStyle = '#d5a85d';
-    ctx.fillRect(px + 3, py, 16, 4);
-    ctx.fillStyle = shocked ? '#ef4444' : '#8ed0c1';
-    ctx.fillRect(px + 8, py + 7, 8, 3);
+    ctx.lineWidth = 2.6;
+    ctx.strokeStyle = '#000000';
+    ctx.lineCap = 'round';
 
-    // Navy work coat with brass fasteners.
-    ctx.fillStyle = '#203b48';
-    ctx.fillRect(px + 4, py + 13, 14, 12);
-    ctx.fillStyle = '#31566a';
-    ctx.fillRect(px + 6, py + 14, 3, 10);
-    ctx.fillStyle = '#d5a85d';
-    ctx.fillRect(px + 10, py + 15, 2, 2);
-    ctx.fillRect(px + 10, py + 20, 2, 2);
-
-    // Flexible tool arms.
-    ctx.strokeStyle = '#172b35';
-    ctx.lineWidth = 3;
-    const armWave = Math.sin(this.animTimer * 8) * 4;
+    // ---- Legs: thin rubber-hose lines with big black shoes ----
+    const legSpread = 3 + swing * 4;
     ctx.beginPath();
-    ctx.moveTo(px + 5, py + 17);
-    ctx.quadraticCurveTo(px - 2, py + 20 + armWave, px, py + 26);
+    ctx.moveTo(px + 11, py + 24 + bob * 0.5);
+    ctx.quadraticCurveTo(px + 10, py + 27, px + 10 - legSpread, py + 28);
     ctx.stroke();
     ctx.beginPath();
-    ctx.moveTo(px + 17, py + 17);
-    ctx.quadraticCurveTo(px + 24, py + 20 - armWave, px + 22, py + 26);
+    ctx.moveTo(px + 11, py + 24 + bob * 0.5);
+    ctx.quadraticCurveTo(px + 12, py + 27, px + 12 + (airborneLimb ? 5 : legSpread), py + 28 - (airborneLimb ? 3 : 0));
     ctx.stroke();
-    ctx.fillStyle = '#d5a85d';
-    ctx.fillRect(px - 2, py + 25, 4, 3);
-    ctx.fillRect(px + 20, py + 25, 4, 3);
-
-    // Boots and compact stance.
-    const walkBob = (this.onGround && Math.abs(this.vx) > 20) ? Math.sin(this.animTimer * 16) * 3 : 0;
-    ctx.strokeStyle = '#172b35';
-    ctx.lineWidth = 3;
+    // Shoes (large oval black, toe forward)
+    const shoeY1 = py + 28;
+    const shoeY2 = airborneLimb ? py + 25 : py + 28;
+    ctx.fillStyle = '#000000';
     ctx.beginPath();
-    ctx.moveTo(px + 7, py + 26);
-    ctx.lineTo(px + 5, py + 29 + walkBob);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(px + 15, py + 26);
-    ctx.lineTo(px + 17, py + 29 - walkBob);
-    ctx.stroke();
-    ctx.fillStyle = '#111c23';
-    ctx.beginPath();
-    ctx.ellipse(px + 4, py + 29 + walkBob, 4, 2, 0, 0, Math.PI * 2);
+    ctx.ellipse(px + 9 - legSpread, shoeY1, 4.5, 2.5, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.beginPath();
-    ctx.ellipse(px + 18, py + 29 - walkBob, 4, 2, 0, 0, Math.PI * 2);
+    ctx.ellipse(px + 13 + (airborneLimb ? 5 : legSpread), shoeY2, 4.5, 2.5, 0, 0, Math.PI * 2);
     ctx.fill();
+
+    // ---- Torso: black body ----
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(px + 6, py + 16 + bob, 10, 9);
+
+    // ---- White shorts with two button dots ----
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(px + 5.5, py + 22 + bob, 11, 5);
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 1.4;
+    ctx.strokeRect(px + 5.5, py + 22 + bob, 11, 5);
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(px + 8, py + 23.5 + bob, 2, 2);
+    ctx.fillRect(px + 12, py + 23.5 + bob, 2, 2);
+
+    // ---- Arms: thin hose lines with big white gloves ----
+    const armSpread = 4 + armSwing * 4;
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2.6;
+    ctx.beginPath();
+    ctx.moveTo(px + 7, py + 18 + bob);
+    ctx.quadraticCurveTo(px + 2, py + 20 + armSwing * 2, px + 2 - armSpread * 0.5, py + 24);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(px + 15, py + 18 + bob);
+    ctx.quadraticCurveTo(px + 20, py + 20 + (moving ? -armSwing * 2 : airborneLimb ? -3 : 0), px + 20 + armSpread * 0.5, py + 24);
+    ctx.stroke();
+    // Gloves (white circles)
+    ctx.fillStyle = '#ffffff';
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.arc(px + 2 - armSpread * 0.5, py + 24, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(px + 20 + armSpread * 0.5, py + 24, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+
+    // ---- Head: big solid black circle + round ears ----
+    const headCy = py + 8.5 + bob;
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.arc(px + 11, headCy, 8.5, 0, Math.PI * 2);
+    ctx.fill();
+    // Ears: two big round black circles on top
+    ctx.beginPath();
+    ctx.arc(px + 4, py + 2.5 + bob, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(px + 18, py + 2.5 + bob, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Cream face patch (lower front of head)
+    ctx.fillStyle = '#f2ead9';
+    ctx.beginPath();
+    ctx.ellipse(px + 14, headCy + 3, 5.5, 4.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Long snout/muzzle extending forward
+    ctx.fillStyle = '#f2ead9';
+    ctx.beginPath();
+    ctx.ellipse(px + 19, headCy + 3, 4, 2.8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    // Black nose tip
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.arc(px + 22, headCy + 2.5, 1.6, 0, Math.PI * 2);
+    ctx.fill();
+    // Open smile showing when running
+    if (moving || shocked) {
+      ctx.fillStyle = '#000000';
+      ctx.beginPath();
+      ctx.ellipse(px + 17, headCy + 5.5, 3.2, 2, 0, 0, Math.PI);
+      ctx.fill();
+      ctx.fillStyle = '#f2ead9';
+      ctx.fillRect(px + 14.4, headCy + 5.5, 5.2, 0.9);
+    } else {
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      ctx.arc(px + 17, headCy + 4.5, 2.2, 0.2, Math.PI - 0.2);
+      ctx.stroke();
+    }
+
+    // ---- Eyes: pie-cut (white oval + black pupil wedge) ----
+    if (shocked) {
+      // X eyes during the death spin
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(px + 10, headCy - 2);
+      ctx.lineTo(px + 13.5, headCy + 1.5);
+      ctx.moveTo(px + 13.5, headCy - 2);
+      ctx.lineTo(px + 10, headCy + 1.5);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(px + 15.5, headCy - 1);
+      ctx.lineTo(px + 18.5, headCy + 2);
+      ctx.moveTo(px + 18.5, headCy - 1);
+      ctx.lineTo(px + 15.5, headCy + 2);
+      ctx.stroke();
+    } else {
+      // Right eye
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.ellipse(px + 15, headCy - 0.5, 2.2, 2.8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Left eye (peeks behind profile)
+      ctx.beginPath();
+      ctx.ellipse(px + 10.5, headCy - 0.5, 2, 2.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Pupil wedges (pie-cut)
+      ctx.fillStyle = '#000000';
+      ctx.beginPath();
+      ctx.moveTo(px + 15, headCy - 0.5);
+      ctx.lineTo(px + 15.2, headCy + 2.2);
+      ctx.lineTo(px + 16.9, headCy + 0.4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(px + 10.5, headCy - 0.5);
+      ctx.lineTo(px + 10.7, headCy + 2);
+      ctx.lineTo(px + 12.3, headCy + 0.2);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // ---- Pillbox sailor cap with band ----
+    const capY = py + 1.5 + bob;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(px + 5, capY - 6, 12, 6);
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 1.4;
+    ctx.strokeRect(px + 5, capY - 6, 12, 6);
+    // Band
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(px + 5, capY - 1.5, 12, 2);
+    // Cap top line
+    ctx.beginPath();
+    ctx.moveTo(px + 5, capY - 6);
+    ctx.lineTo(px + 4, capY - 8.5);
+    ctx.lineTo(px + 18, capY - 8.5);
+    ctx.lineTo(px + 17, capY - 6);
+    ctx.stroke();
 
     // Steam-lantern puff when idle.
     if (this.onGround && Math.abs(this.vx) < 10 && !shocked) {
@@ -406,10 +529,10 @@ export class Player implements Box {
       if (puffPhase > 0.5) {
         ctx.fillStyle = 'rgba(200, 220, 214, 0.5)';
         ctx.beginPath();
-        ctx.arc(px + 20, py + 6 - puffPhase * 4, 2 + puffPhase * 2, 0, Math.PI * 2);
+        ctx.arc(px + 22, py + 4 - puffPhase * 4, 2 + puffPhase * 2, 0, Math.PI * 2);
         ctx.fill();
         ctx.beginPath();
-        ctx.arc(px + 23, py + 3 - puffPhase * 6, 1.5 + puffPhase, 0, Math.PI * 2);
+        ctx.arc(px + 25, py + 1 - puffPhase * 6, 1.5 + puffPhase, 0, Math.PI * 2);
         ctx.fill();
       }
     }

@@ -391,6 +391,25 @@ canvas#game-canvas {
   gap: 10px;
 }
 
+.level-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-dim);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+}
+
+.level-picker select {
+  min-width: 150px;
+  padding: 8px 10px;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  background: var(--panel-bg);
+  color: var(--text-main);
+  font: inherit;
+}
+
 .toolbar-end {
   display: flex;
   gap: 8px;

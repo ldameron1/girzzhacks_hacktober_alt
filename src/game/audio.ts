@@ -119,21 +119,32 @@ export class AudioManager {
     if (!this.ctx) return;
 
     const now = this.ctx.currentTime;
-    const osc1 = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
-
-    osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(987.77, now); // B5
-    osc1.frequency.setValueAtTime(1318.51, now + 0.08); // E6
-
-    gain.gain.setValueAtTime(0.15, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
-
-    osc1.connect(gain);
-    gain.connect(this.masterGain!);
-
-    osc1.start(now);
-    osc1.stop(now + 0.35);
+    // Brass route-token chime: two stacked riverboat-bell tones. Deliberately
+    // NOT the classic arcade two-step interval — this is a ship's bell.
+    const bell = (freq: number, at: number, dur: number, vol: number) => {
+      const osc = this.ctx!.createOscillator();
+      const shimmer = this.ctx!.createOscillator();
+      const shGain = this.ctx!.createGain();
+      const gain = this.ctx!.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, at);
+      shimmer.type = 'sine';
+      shimmer.frequency.setValueAtTime(freq * 2.76, at); // inharmonic bell overtone
+      shGain.gain.setValueAtTime(vol * 0.25, at);
+      shGain.gain.exponentialRampToValueAtTime(0.0001, at + dur * 0.6);
+      shimmer.connect(shGain);
+      gain.gain.setValueAtTime(vol, at);
+      gain.gain.exponentialRampToValueAtTime(0.001, at + dur);
+      osc.connect(gain);
+      shimmer.connect(gain);
+      gain.connect(this.masterGain!);
+      osc.start(at);
+      shimmer.start(at);
+      osc.stop(at + dur);
+      shimmer.stop(at + dur);
+    };
+    bell(659.25, now, 0.22, 0.12);        // E5 strike
+    bell(987.77, now + 0.09, 0.45, 0.13); // B5 resolve
   }
 
   playDeath() {
@@ -203,26 +214,27 @@ export class AudioManager {
     this.initCtx();
     if (!this.ctx) return;
 
-    // Short ragtime-style riverboat fanfare.
-    const notes = [392.00, 523.25, 659.25, 523.25, 587.33, 783.99, 1046.50];
+    // Arrival fanfare: the Turkey in the Straw tag played on the calliope,
+    // ending with a big low whistle blow-off.
+    const seq: Array<[number, number]> = [
+      [783.99, 0.11], [783.99, 0.11], [880, 0.11], [987.77, 0.22],
+      [880, 0.11], [739.99, 0.11], [587.33, 0.33], [783.99, 0.6]
+    ];
     const now = this.ctx.currentTime;
-
-    notes.forEach((freq, idx) => {
+    let t = now;
+    seq.forEach(([freq, dur], idx) => {
       const osc = this.ctx!.createOscillator();
       const gain = this.ctx!.createGain();
-
-      osc.type = idx < 2 ? 'triangle' : 'sine';
-      const startT = now + idx * 0.1;
-      osc.frequency.setValueAtTime(freq, startT);
-
-      gain.gain.setValueAtTime(0.18, startT);
-      gain.gain.exponentialRampToValueAtTime(0.01, startT + (idx === notes.length - 1 ? 0.6 : 0.12));
-
+      osc.type = idx < seq.length - 1 ? 'square' : 'sine';
+      osc.frequency.setValueAtTime(freq * 0.985, t);
+      osc.frequency.exponentialRampToValueAtTime(freq, t + 0.04);
+      gain.gain.setValueAtTime(idx < seq.length - 1 ? 0.075 : 0.16, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
       osc.connect(gain);
       gain.connect(this.masterGain!);
-
-      osc.start(startT);
-      osc.stop(startT + (idx === notes.length - 1 ? 0.6 : 0.12));
+      osc.start(t);
+      osc.stop(t + dur + 0.02);
+      t += dur;
     });
   }
 
@@ -231,26 +243,26 @@ export class AudioManager {
     this.initCtx();
     if (!this.ctx) return;
 
-    const whistle = (freq: number, at: number, dur: number, vol = 0.055) => {
+    const whistle = (freq: number, at: number, dur: number, vol = 0.05) => {
       const ctx = this.ctx!;
       const osc = ctx.createOscillator();
       const vib = ctx.createOscillator();
       const vibGain = ctx.createGain();
       const gain = ctx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq * 0.96, at);
+      osc.frequency.setValueAtTime(freq * 0.97, at);
       // Steam pressurizes upward into pitch, then holds with a gentle wobble.
-      osc.frequency.exponentialRampToValueAtTime(freq, at + Math.min(0.05, dur / 3));
-      vib.frequency.setValueAtTime(6.5, at);
-      vibGain.gain.setValueAtTime(freq * 0.01, at);
+      osc.frequency.exponentialRampToValueAtTime(freq, at + Math.min(0.04, dur / 4));
+      vib.frequency.setValueAtTime(6, at);
+      vibGain.gain.setValueAtTime(freq * 0.006, at);
       vib.connect(vibGain);
       vibGain.connect(osc.frequency);
       gain.gain.setValueAtTime(0.0001, at);
       gain.gain.linearRampToValueAtTime(vol, at + Math.min(0.02, dur / 4));
-      gain.gain.setValueAtTime(vol, at + dur * 0.7);
+      gain.gain.setValueAtTime(vol, at + dur * 0.65);
       gain.gain.exponentialRampToValueAtTime(0.001, at + dur);
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(this.masterGain ?? ctx.destination);
       osc.start(at);
       vib.start(at);
       osc.stop(at + dur + 0.02);
@@ -266,7 +278,7 @@ export class AudioManager {
       gain.gain.setValueAtTime(vol, at);
       gain.gain.exponentialRampToValueAtTime(0.001, at + dur);
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(this.masterGain ?? ctx.destination);
       osc.start(at);
       osc.stop(at + dur);
     };
@@ -279,64 +291,63 @@ export class AudioManager {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(strong ? 62 : 55, at);
       osc.frequency.exponentialRampToValueAtTime(38, at + 0.09);
-      gain.gain.setValueAtTime(strong ? 0.075 : 0.045, at);
+      gain.gain.setValueAtTime(strong ? 0.06 : 0.038, at);
       gain.gain.exponentialRampToValueAtTime(0.001, at + 0.1);
       osc.connect(gain);
-      gain.connect(ctx.destination);
+      gain.connect(this.masterGain ?? ctx.destination);
       osc.start(at);
       osc.stop(at + 0.11);
     };
 
-    // One 8-beat bar at ~72 BPM (beat = 333ms): OOM-pah stride bass under a
-    // signature steamboat whistle call. Public-domain cartoon-era idiom.
-    // Whistle: two short calls, then a long answered blast.
-    const beat = 0.3333;
-    const bar = beat * 8;
-    const G4 = 392.0, A4 = 440.0, C5 = 523.25, D5 = 587.33, E5 = 659.25, C6 = 1046.5;
+    // -*- Turkey in the Straw -*- (traditional, public domain): the reel that
+    // Steamboat Willie's fiddle-and-whistle scene is built around, so the BGM
+    // reads instantly as "Steamboat Willie".
+    // A-part, key G, raised one octave to sit in the steam-whistle register.
+    const eighth = 0.115;                       // ~130 BPM reel
+    const bar = eighth * 8;
+    const G5 = 783.99;
+    const note = (semi: number) => G5 * Math.pow(2, semi / 12);
+    // [relative-to-G5 semitones, duration in eighths]; negative 999 = rest
+    const MELODY: Array<[number, number]> = [
+      [3, 1], [0, 1], [-5, 1], [3, 1], [0, 2], [-5, 1], [-1, 1],
+      [2, 1], [4, 1], [2, 1], [-5, 1], [2, 2], [0, 1], [4, 1],
+      [7, 2], [7, 2], [7, 1], [-1, 1], [-5, 1], [4, 1],
+      [7, 2], [-1, 2], [7, 2], [0, 3]
+    ];
 
-    const scheduleBar = (base: number, phrase: number) => {
-      for (let b = 0; b < 8; b++) {
-        chug(base + b * beat, b % 2 === 0);
-      }
-      const alternator = phrase % 2;
-      // stride bass: root on 1, 3, 5, 7; fifth on 2, 4, 6, 8
-      const roots = alternator === 0 ? [98.0, 130.81] : [110.0, 146.83];
-      for (let b = 0; b < 8; b++) {
-        const at = base + b * beat;
-        if (b % 2 === 0) pah(roots[(b / 2) % 2], at, 0.22, 0.06);
-        else pah(roots[1] * 2, at, 0.1, 0.03, 'square'); // offbeat clip
-      }
-      if (alternator === 0) {
-        // Phrase A: "tur-tur TUUUR - tu tur TUUUR" whistle call
-        whistle(C5, base + 0 * beat, 0.32);
-        whistle(E5, base + 1 * beat, 0.32);
-        whistle(G4, base + 2 * beat, 1.0);
-        whistle(C5, base + 4 * beat, 0.32);
-        whistle(D5, base + 5 * beat, 0.32);
-        whistle(E5, base + 6 * beat, 1.4);
-      } else {
-        // Phrase B: answer — one soft call, then the big blow-off.
-        whistle(D5, base + 0 * beat, 0.24);
-        whistle(C5, base + 1 * beat, 0.24);
-        whistle(C6, base + 2 * beat, 0.9);
-        whistle(A4, base + 5 * beat, 0.35);
-        whistle(G4, base + 6 * beat, 1.5);
-      }
-    };
-
-    let phrase = 0;
-    let nextBar = this.ctx.currentTime + 0.12;
+    let nextNote = this.ctx.currentTime + 0.12;
+    let noteIdx = 0;
+    let nextBar = nextNote;
+    let barCount = 0;
     this.bgmInterval = window.setInterval(() => {
-      if (this.isMuted) return;
-      if (!this.ctx) { this.ctx = null as any; return; }
+      if (this.isMuted || this.bgmInterval === null) return;
       const ctx = this.ctx;
-      while (nextBar < ctx.currentTime + 1.6) {
-        scheduleBar(nextBar, phrase++);
+      if (!ctx) return;
+      const horizon = ctx.currentTime + 1.4;
+
+      while (nextBar < horizon) {
+        const root = barCount % 2 === 0 ? 98.0 : 130.81;
+        for (let b = 0; b < 8; b++) {
+          const at = nextBar + b * eighth;
+          chug(at, b % 2 === 0);
+          if (b % 2 === 0) pah(root, at, 0.2, 0.052);
+          else pah(root * 2, at, 0.09, 0.028, 'square');
+        }
         nextBar += bar;
+        barCount++;
       }
-      // Keep the firebox lit: startBgm scheduled ahead, so rewind the cursor
-      // if the tab throttled timers and fell behind.
-      if (nextBar < ctx.currentTime) nextBar = ctx.currentTime + 0.05;
-    }, 700);
+      while (nextNote < horizon) {
+        const [semi, beats] = MELODY[noteIdx % MELODY.length];
+        const dur = beats * eighth;
+        if (semi > -999 && noteIdx % MELODY.length !== 0) whistle(note(semi) * 0.993, nextNote, Math.min(dur * 0.92, 0.6));
+        else if (semi > -999 && semi === 3) whistle(note(semi), nextNote, 0.18);
+        nextNote += dur;
+        noteIdx++;
+      }
+      if (nextNote < ctx.currentTime || nextBar < ctx.currentTime) {
+        nextNote = ctx.currentTime + 0.05;
+        nextBar = ctx.currentTime + 0.05;
+      }
+    }, 600);
   }
 }

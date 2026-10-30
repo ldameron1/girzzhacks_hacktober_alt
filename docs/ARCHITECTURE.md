@@ -21,32 +21,42 @@ Express + Vite (`server/server.ts`)
 
 The browser owns the 60 FPS simulation and applies accepted mutations to the
 live `Level`. The server does not run the game loop; it analyzes telemetry,
-validates level patches, and returns JSON.
+validates level patches, and returns JSON. `Level` exposes a small catalog of
+named routes (`midnight-run`, `boiler-deck`, and `captains-stairs`) that reuse
+the same tile/entity systems rather than creating separate game modes.
 
 ## Gemma request lifecycle
 
 1. `GameEngine.handlePlayerDeath()` records the death and starts one mutation
-   request. A request already in flight is coalesced rather than duplicated.
-2. The client sends `telemetry` plus a serializable `currentLevel` to
+   flow. A request already in flight is coalesced; a failed fetch is retried
+   once.
+2. The client sends `telemetry` plus a serializable `currentLevel` (including
+   `levelId`, display name, and section metadata) to
    `POST /api/mutate`.
 3. `GemmaArchitectService` builds a structured prompt and tries providers in
    this order:
    - Google API: `gemma-4-26b-a4b-it`, then `gemini-2.5-flash`
    - OpenRouter: `google/gemma-4-26b-a4b-it`
    - deterministic local heuristic response
-4. Model output is parsed as JSON and mutation types/coordinates are
-   sanitized.
-5. `LevelPatcher.applyMutations()` clones the supplied map, accepts only safe
-   patches, and returns `accepted` and `rejected` mutations.
-6. The browser applies accepted mutations to tiles, coins, and entities.
-   `activeMutations` are rebuilt after respawn so accepted hazards persist.
-7. The Overseer UI displays the response and stores up to 12 raw request or
-   response entries in `localStorage` under
-   `gemmakaizo-request-feed`.
+4. Provider text is parsed as direct JSON, fenced JSON, or the first JSON
+   object found. Valid mutation types are allow-listed and coordinates are
+   rounded and clamped before patching.
+5. `LevelPatcher.applyMutations()` clones the supplied map, checks bounds and
+   placement conditions, and returns `accepted` and `rejected` mutations plus
+   `patchedLevel`.
+6. The browser currently applies the accepted mutation descriptors to its live
+   `Level` rather than replacing the whole map with `patchedLevel`. It performs
+   a second integer/bounds check, tracks `activeMutations`, and rebuilds dynamic
+   entities after respawn so accepted hazards persist.
+7. `src/main.ts` sends response data to `OverseerTerminal`, which displays the
+   provider/model, latency, diagnosis, taunt, fairness estimate, and
+   accepted/rejected counts. Request, retry, response, and application entries
+   are persisted as raw diagnostic JSON (up to 12 entries) in
+   `localStorage` under `gemmakaizo-request-feed`.
 
 The optional `POST /api/decision` path supplies bot advice. The local reflex
 controller still owns movement; remote decision responses do not directly
-drive player input.
+drive player input. There is no MCP transport in the implemented integration.
 
 ## Telemetry contract
 
@@ -127,7 +137,8 @@ or production build.
 
 ## Known limitations
 
-- The current game contains one level; the flag ends that level.
+- The catalog currently contains three compact route variants; each route ends
+  at the existing flag mast and shares the same mutation contract.
 - Google/OpenRouter availability, quotas, latency, and model output are
   external dependencies. The heuristic fallback keeps mutation requests
   functional but is not a remote Gemma response.

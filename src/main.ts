@@ -1,4 +1,5 @@
 import { GameEngine } from './game/engine.js';
+import { LEVEL_VARIANTS } from './game/level.js';
 import { GameHUD } from './ui/hud.js';
 import { OverseerTerminal } from './ui/overseer.js';
 
@@ -57,6 +58,7 @@ window.addEventListener('DOMContentLoaded', () => {
         response: data,
         receivedAt: new Date().toISOString()
       });
+
       overseer.updateProofChain('validated', `${data.mutations?.length || 0} accepted · ${data.rejectedMutations?.length || 0} rejected by server`);
       overseer.updateApiMonitor({
         kind: 'mutation-response',
@@ -112,6 +114,18 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  const levelSelect = document.getElementById('level-select') as HTMLSelectElement | null;
+  if (levelSelect) {
+    levelSelect.replaceChildren(...LEVEL_VARIANTS.map(variant => {
+      const option = document.createElement('option');
+      option.value = variant.id;
+      option.textContent = variant.name;
+      option.title = variant.description;
+      return option;
+    }));
+    levelSelect.value = engine.level.activeLevelId;
+  }
+
   // Start Screen Dismiss
   const dismissStart = () => {
     if (startOverlay && !startOverlay.classList.contains('hidden')) {
@@ -156,15 +170,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   btnFullReset?.addEventListener('click', () => {
     gameoverOverlay.classList.add('hidden');
-    engine.level.createDefaultMap();
-    engine.resetAdaptiveMutations();
-    engine.totalMutationsApplied = 0;
-    engine.telemetry.reset();
-    engine.player.clearConsecutiveDeaths();
-    engine.player.reset(3 * 32, 11 * 32);
-    engine.telemetry.startNewRun(engine.player.x);
-    engine.resetLevelEntities();
-    engine.isPaused = false;
+    engine.resetRun();
   });
 
   // Setup Toolbar Button Controls
@@ -202,29 +208,21 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const btnReset = document.getElementById('btn-reset')!;
   btnReset?.addEventListener('click', () => {
-    engine.level.createDefaultMap();
-    engine.resetAdaptiveMutations();
-    engine.totalMutationsApplied = 0;
-    engine.telemetry.reset();
-    engine.player.clearConsecutiveDeaths();
-    engine.player.reset(3 * 32, 11 * 32);
-    engine.telemetry.startNewRun(engine.player.x);
-    engine.resetLevelEntities();
+    engine.resetRun();
     victoryOverlay.classList.add('hidden');
     gameoverOverlay.classList.add('hidden');
-    engine.isPaused = false;
   });
 
   btnReplay?.addEventListener('click', () => {
     victoryOverlay.classList.add('hidden');
-    engine.level.createDefaultMap();
-    engine.resetAdaptiveMutations();
-    engine.totalMutationsApplied = 0;
-    engine.telemetry.reset();
-    engine.player.clearConsecutiveDeaths();
-    engine.player.reset(3 * 32, 11 * 32);
-    engine.telemetry.startNewRun(engine.player.x);
-    engine.resetLevelEntities();
-    engine.isPaused = false;
+    engine.resetRun();
   });
+
+  if (levelSelect) {
+    levelSelect.addEventListener('change', () => {
+      engine.resetRun(levelSelect.value);
+      victoryOverlay.classList.add('hidden');
+      gameoverOverlay.classList.add('hidden');
+    });
+  }
 });

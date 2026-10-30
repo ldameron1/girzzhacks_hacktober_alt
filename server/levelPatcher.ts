@@ -13,6 +13,9 @@ export interface Mutation {
 export interface LevelMap {
   width: number;
   height: number;
+  levelId?: string;
+  levelName?: string;
+  section?: string;
   tiles: number[][]; // 0: empty, 1: solid, 2: question, 3: spike, 4: crumbling, 5: spring, 6: checkpoint, 7: flag, 8: kaizo (invisible solid)
   enemies: Array<{ type: string; x: number; y: number }>;
   coins: Array<{ x: number; y: number }>;
@@ -123,6 +126,9 @@ export class LevelPatcher {
       level: {
         width: level.width,
         height: level.height,
+        ...(level.levelId ? { levelId: level.levelId } : {}),
+        ...(level.levelName ? { levelName: level.levelName } : {}),
+        ...(level.section ? { section: level.section } : {}),
         tiles: newTiles,
         enemies: newEnemies,
         coins: newCoins
