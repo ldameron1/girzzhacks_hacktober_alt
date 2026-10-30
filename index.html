@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GemmaKaizo: AI-Powered Adaptive Rage Mario (Gemma 4)</title>
+  <link rel="stylesheet" href="/src/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo-group">
+        <h1 class="game-title">GEMMA<span>KAIZO</span></h1>
+        <span class="hackathon-tag">GRIZZHACKS • BEST USE OF GEMMA 4</span>
+      </div>
+      <div class="header-badges">
+        <span id="hud-bot-badge" class="badge human-active">🎮 HUMAN PLAYER</span>
+        <span class="badge model-tag">OVERSEER: GEMMA 4</span>
+      </div>
+    </header>
+
+    <!-- Main Game & Stats Grid -->
+    <main class="main-layout">
+      <!-- Left Column: Arcade Canvas & Controls -->
+      <section class="game-section">
+        <!-- HUD Bar -->
+        <div class="arcade-hud">
+          <div class="hud-item">
+            <span class="hud-label">DEATHS</span>
+            <span id="hud-deaths" class="hud-val danger">0</span>
+          </div>
+          <div class="hud-item">
+            <span class="hud-label">COINS</span>
+            <span id="hud-coins" class="hud-val yellow">0</span>
+          </div>
+          <div class="hud-item">
+            <span class="hud-label">PROGRESS</span>
+            <span id="hud-progress" class="hud-val cyan">0%</span>
+          </div>
+          <div class="hud-item">
+            <span class="hud-label">DIFFICULTY</span>
+            <span id="hud-brutality" class="hud-val neon">TIER 3/10</span>
+          </div>
+          <div class="hud-item rage-container">
+            <span class="hud-label">RAGE METER</span>
+            <div class="rage-bar"><div id="hud-rage-fill" class="rage-fill"></div></div>
+          </div>
+        </div>
+
+        <!-- Canvas Container -->
+        <div class="canvas-wrapper">
+          <canvas id="game-canvas" width="800" height="480"></canvas>
+          <div id="victory-overlay" class="overlay hidden">
+            <div class="overlay-box">
+              <h2 class="victory-title">STAGE CLEARED!</h2>
+              <p>You conquered Gemma 4's adaptive Kaizo traps.</p>
+              <button id="btn-replay" class="btn primary-btn">PLAY AGAIN</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Arcade Toolbar Controls -->
+        <div class="toolbar">
+          <button id="btn-toggle-bot" class="btn action-btn">
+            <span class="btn-icon">🤖</span> Auto-Play (AI Agent)
+          </button>
+          <button id="btn-toggle-heatmap" class="btn action-btn">
+            <span class="btn-icon">☠️</span> Death Heatmap
+          </button>
+          <button id="btn-toggle-ghost" class="btn action-btn">
+            <span class="btn-icon">⚡</span> Speedrunner Ghost Path
+          </button>
+          <button id="btn-toggle-audio" class="btn action-btn">
+            <span class="btn-icon">🔊</span> Audio: ON
+          </button>
+          <button id="btn-reset" class="btn danger-btn">
+            <span class="btn-icon">🔄</span> Reset Stage
+          </button>
+        </div>
+
+        <!-- Instructions Footer -->
+        <div class="controls-guide">
+          <span><strong>Move:</strong> A / D or ◄ / ►</span>
+          <span><strong>Jump / Wall-Kick:</strong> Space or W (Hold for higher jump)</span>
+          <span><strong>Sprint:</strong> Shift or X</span>
+          <span><strong>Bot:</strong> B</span>
+          <span><strong>Heatmap:</strong> H</span>
+        </div>
+      </section>
+
+      <!-- Right Column: Gemma 4 Kaizo Overseer Terminal -->
+      <aside class="overseer-sidebar">
+        <div class="terminal-card">
+          <div class="terminal-header">
+            <div class="terminal-dots">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+            </div>
+            <span class="terminal-title">GEMMA 4 ARCHITECT CONSOLE</span>
+            <div class="terminal-meta">
+              <span id="overseer-model" class="meta-tag">gemma-4-26b-a4b-it</span>
+              <span id="overseer-latency" class="meta-tag">120ms</span>
+            </div>
+          </div>
+
+          <div class="terminal-body">
+            <!-- Sarcastic Taunt Banner -->
+            <div class="taunt-box">
+              <div class="terminal-prompt">&gt; OVERSEER LIVE COMMENTARY:</div>
+              <div id="overseer-taunt" class="typewriter-text">
+                "Welcome, subject. I will monitor your every hesitation and engineer your downfall."
+              </div>
+            </div>
+
+            <!-- Subject Profile -->
+            <div class="intel-section">
+              <span class="intel-label">PLAYER ARCHETYPE:</span>
+              <div id="overseer-archetype" class="archetype-badge">Analyzing locomotion...</div>
+            </div>
+
+            <!-- Clinical Diagnosis -->
+            <div class="intel-section">
+              <span class="intel-label">TELEMETRY DIAGNOSIS:</span>
+              <p id="overseer-diagnosis" class="diagnosis-text">
+                Run telemetry active. Tracking sprint ratios, gap hesitation metrics, and jump arc hold times.
+              </p>
+            </div>
+
+            <!-- Deployed Mutations List -->
+            <div class="intel-section">
+              <span class="intel-label">ACTIVE KAIZO ADAPTATIONS:</span>
+              <div id="overseer-mutations" class="mutations-container">
+                <div class="mutation-badge">
+                  <span class="m-type">[KAIZO_BLOCK]</span>
+                  <span class="m-pos">@ (23, 10)</span>
+                  <span class="m-desc">Intercepts blind max-height leap over Section 1 gap.</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Fairness Guarantee -->
+            <div class="intel-section fairness-box">
+              <span class="intel-label">SPEEDRUNNER FAIRNESS AUDIT:</span>
+              <p id="overseer-fairness" class="fairness-text">
+                ✓ Mathematically verified: All gaps bypassable with momentum cancel or tap hops.
+              </p>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

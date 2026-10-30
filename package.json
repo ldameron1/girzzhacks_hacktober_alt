@@ -1,0 +1,42 @@
+{
+  "name": "girzzhacks_hacktober_alt",
+  "version": "1.0.0",
+  "description": "GemmaKaizo: AI-Powered Adaptive Rage Platformer with Gemma 4 Kaizo Architect",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx server/server.ts",
+    "client": "vite",
+    "server": "tsx server/server.ts",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "node --test tests/physics.test.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ldameron1/girzzhacks_hacktober_alt.git"
+  },
+  "keywords": [
+    "hackathon",
+    "grizzhacks",
+    "gemma-4",
+    "gemini-api",
+    "mario",
+    "kaizo",
+    "adaptive-ai"
+  ],
+  "author": "ldameron1",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "vite": "^5.4.10"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.8.7",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}
