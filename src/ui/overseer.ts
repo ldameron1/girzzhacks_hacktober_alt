@@ -153,7 +153,8 @@ export class OverseerTerminal {
     const rejectedCount = Array.isArray(data.rejectedMutations) ? data.rejectedMutations.length : 0;
     const fallbackUsed = data.fallbackUsed === true
       || /heuristic|offline|fallback/i.test(String(data.modelUsed || ''));
-    const diagnosis = this.truncate(String(data.diagnosis || data.rationale || 'No diagnosis returned.'));
+    const rawDiagnosis = String(data.diagnosis || data.rationale || '');
+    const diagnosis = this.truncate(rawDiagnosis || (data.fallbackUsed ? 'No live model commentary — offline heuristic response.' : 'No diagnosis returned.'));
 
     if (this.archetypeElem) {
       this.archetypeElem.textContent = data.playerArchetype || 'Subject Identified';

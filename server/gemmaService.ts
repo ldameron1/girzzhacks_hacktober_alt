@@ -270,8 +270,8 @@ RESPOND ONLY WITH A VALID JSON OBJECT MATCHING THIS SCHEMA (no preamble or prose
     const isEarlyLeaper = telemetry.edgeJumpDistanceAvg > 20;
 
     let archetype = 'The Methodical Jumper';
-    let diagnosis = 'Subject displays moderate caution with occasional timing inaccuracies.';
-    let taunt = 'Hesitation is the seed of defeat.';
+    let diagnosis = ''; // no fake model commentary when offline
+    let taunt = '';
     const mutations: Mutation[] = [];
 
     const focusX = telemetry.recentDeaths.length > 0 
@@ -282,8 +282,8 @@ RESPOND ONLY WITH A VALID JSON OBJECT MATCHING THIS SCHEMA (no preamble or prose
 
     if (isRusher) {
       archetype = 'The Impatient Speedster';
-      diagnosis = 'Player holds sprint continuously and expects floor stability across all gaps.';
-      taunt = 'Speed without vision is merely accelerated doom.';
+      diagnosis = '';
+      taunt = '';
       mutations.push({
         type: 'CRUMBLING_FLOOR',
         x: targetX,
@@ -298,8 +298,8 @@ RESPOND ONLY WITH A VALID JSON OBJECT MATCHING THIS SCHEMA (no preamble or prose
       });
     } else if (isFloaty) {
       archetype = 'The Floaty Dreamer';
-      diagnosis = 'Player over-commits to maximum jump hold duration, giving them poor vertical recovery.';
-      taunt = 'What goes up must come down—usually onto my spikes.';
+      diagnosis = '';
+      taunt = '';
       mutations.push({
         type: 'CEILING_SPIKE',
         x: targetX,
@@ -314,8 +314,8 @@ RESPOND ONLY WITH A VALID JSON OBJECT MATCHING THIS SCHEMA (no preamble or prose
       });
     } else if (isHesitator) {
       archetype = 'The Paralyzed Analyst';
-      diagnosis = 'Subject lingers on gap edges calculating trajectory, displaying significant motor hesitation.';
-      taunt = 'Thinking is good. Thinking while standing on decaying stone is fatal.';
+      diagnosis = '';
+      taunt = '';
       mutations.push({
         type: 'CRUMBLING_FLOOR',
         x: targetX - 1,
@@ -330,8 +330,8 @@ RESPOND ONLY WITH A VALID JSON OBJECT MATCHING THIS SCHEMA (no preamble or prose
       });
     } else {
       archetype = 'The Greedy Collector';
-      diagnosis = 'Subject cannot resist shiny pickups regardless of environmental risk.';
-      taunt = 'That shiny coin is going to cost you another life.';
+      diagnosis = '';
+      taunt = '';
       mutations.push({
         type: 'DECEPTIVE_COIN',
         x: targetX + 2,
