@@ -164,7 +164,11 @@ export class OverseerTerminal {
     }
 
     if (this.fairnessElem) {
-      this.fairnessElem.textContent = `Model estimate: ${data.fairnessAudit || 'No audit returned.'}`;
+      const rejectedCount = Array.isArray(data.rejectedMutations) ? data.rejectedMutations.length : 0;
+      const patchStatus = data.patchedLevel ? 'level patch applied' : 'no level patch returned';
+      this.fairnessElem.textContent =
+        `Model estimate: ${data.fairnessAudit || 'No audit returned.'} ` +
+        `(${rejectedCount} rejected; ${patchStatus})`;
     }
 
     if (this.modelIndicatorElem) {
@@ -200,11 +204,24 @@ export class OverseerTerminal {
       data.mutations.forEach((m: any) => {
         const item = document.createElement('div');
         item.className = 'mutation-badge';
-        item.innerHTML = `
-          <span class="m-type">[${m.type}]</span>
-          <span class="m-pos">@ (${m.x}, ${m.y})</span>
-          <span class="m-desc">${m.justification}</span>
-        `;
+        const type = document.createElement('span');
+        type.className = 'm-type';
+        type.textContent = `[${m.type}]`;
+        const position = document.createElement('span');
+        position.className = 'm-pos';
+        position.textContent = `@ (${m.x}, ${m.y})`;
+        const description = document.createElement('span');
+        description.className = 'm-desc';
+        description.textContent = m.justification || 'Accepted by level patcher.';
+        item.append(type, position, description);
+        this.mutationsListElem.appendChild(item);
+      });
+
+      const rejected = Array.isArray(data.rejectedMutations) ? data.rejectedMutations : [];
+      rejected.forEach((m: any) => {
+        const item = document.createElement('div');
+        item.className = 'mutation-badge rejected';
+        item.textContent = `[REJECTED] ${m.type || 'mutation'} @ (${m.x ?? '?'}, ${m.y ?? '?'}) — ${m.reason || m.justification || 'Rejected by level patcher.'}`;
         this.mutationsListElem.appendChild(item);
       });
     }
