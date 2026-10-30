@@ -1,5 +1,5 @@
 /**
- * Web Audio API 8-Bit Retro Sound Synthesizer
+ * Web Audio API riverboat sound synthesizer.
  * Zero external audio files required - 100% procedurally generated.
  */
 
@@ -8,6 +8,7 @@ export class AudioManager {
   private isMuted: boolean = false;
   private bgmInterval: number | null = null;
   private bgmStep: number = 0;
+  private masterGain: GainNode | null = null;
 
   constructor() {
     // Initialized on first user interaction
@@ -17,6 +18,9 @@ export class AudioManager {
     if (!this.ctx) {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       this.ctx = new AudioCtx();
+      this.masterGain = this.ctx.createGain();
+      this.masterGain.gain.value = 0.72;
+      this.masterGain.connect(this.ctx.destination);
     }
     if (this.ctx.state === 'suspended') {
       this.ctx.resume();
@@ -56,7 +60,7 @@ export class AudioManager {
     gain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.masterGain!);
 
     osc.start(now);
     osc.stop(now + 0.12);
@@ -79,7 +83,7 @@ export class AudioManager {
     gain.gain.linearRampToValueAtTime(0.01, now + 0.18);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.masterGain!);
 
     osc.start(now);
     osc.stop(now + 0.15);
@@ -103,7 +107,7 @@ export class AudioManager {
     gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.masterGain!);
 
     osc.start(now);
     osc.stop(now + 0.08);
@@ -126,7 +130,7 @@ export class AudioManager {
     gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
 
     osc1.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.masterGain!);
 
     osc1.start(now);
     osc1.stop(now + 0.35);
@@ -137,25 +141,35 @@ export class AudioManager {
     this.initCtx();
     if (!this.ctx) return;
 
-    const notes = [493.88, 466.16, 440.00, 415.30, 392.00, 329.63, 261.63];
+    // A sad steam-whistle sigh — long descending blast with wobbling steam,
+    // instead of a harsh falling sawtooth.
     const now = this.ctx.currentTime;
-
+    const notes = [523.25, 466.16, 415.30, 392.00, 329.63];
     notes.forEach((freq, idx) => {
       const osc = this.ctx!.createOscillator();
+      const vibrato = this.ctx!.createOscillator();
+      const vibratoGain = this.ctx!.createGain();
       const gain = this.ctx!.createGain();
 
-      osc.type = 'sawtooth';
-      const startT = now + idx * 0.08;
+      osc.type = 'sine';
+      const startT = now + idx * 0.09;
+      const dur = idx === notes.length - 1 ? 0.5 : 0.09;
       osc.frequency.setValueAtTime(freq, startT);
+      vibrato.frequency.setValueAtTime(7, startT);
+      vibratoGain.gain.setValueAtTime(freq * 0.008, startT);
+      vibrato.connect(vibratoGain);
+      vibratoGain.connect(osc.frequency);
 
-      gain.gain.setValueAtTime(0.15, startT);
-      gain.gain.exponentialRampToValueAtTime(0.01, startT + 0.08);
+      gain.gain.setValueAtTime(0.14, startT);
+      gain.gain.exponentialRampToValueAtTime(0.005, startT + dur);
 
       osc.connect(gain);
       gain.connect(this.ctx!.destination);
 
       osc.start(startT);
-      osc.stop(startT + 0.08);
+      vibrato.start(startT);
+      osc.stop(startT + dur);
+      vibrato.stop(startT + dur);
     });
   }
 
@@ -178,7 +192,7 @@ export class AudioManager {
     gain.gain.exponentialRampToValueAtTime(0.01, now + 0.32);
 
     osc.connect(gain);
-    gain.connect(this.ctx.destination);
+    gain.connect(this.masterGain!);
 
     osc.start(now);
     osc.stop(now + 0.32);
@@ -205,7 +219,7 @@ export class AudioManager {
       gain.gain.exponentialRampToValueAtTime(0.01, startT + (idx === notes.length - 1 ? 0.6 : 0.12));
 
       osc.connect(gain);
-      gain.connect(this.ctx!.destination);
+      gain.connect(this.masterGain!);
 
       osc.start(startT);
       osc.stop(startT + (idx === notes.length - 1 ? 0.6 : 0.12));
@@ -215,48 +229,114 @@ export class AudioManager {
   startBgm() {
     if (this.isMuted || this.bgmInterval) return;
     this.initCtx();
+    if (!this.ctx) return;
 
-    // Vintage riverboat whistle motif + jaunty ragtime bassline
-    const bassline = [110, 110, 130.81, 110, 146.83, 130.81, 110, 98];
-    // Iconic 1928 cartoon whistle notes (G4, C5, D5, E5, G5, E5, D5, C5...)
-    const whistleNotes = [392, 0, 523.25, 0, 587.33, 659.25, 0, 783.99, 659.25, 0, 587.33, 523.25, 0, 392, 523.25, 0];
-    const tempoMs = 180;
+    const whistle = (freq: number, at: number, dur: number, vol = 0.055) => {
+      const ctx = this.ctx!;
+      const osc = ctx.createOscillator();
+      const vib = ctx.createOscillator();
+      const vibGain = ctx.createGain();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq * 0.96, at);
+      // Steam pressurizes upward into pitch, then holds with a gentle wobble.
+      osc.frequency.exponentialRampToValueAtTime(freq, at + Math.min(0.05, dur / 3));
+      vib.frequency.setValueAtTime(6.5, at);
+      vibGain.gain.setValueAtTime(freq * 0.01, at);
+      vib.connect(vibGain);
+      vibGain.connect(osc.frequency);
+      gain.gain.setValueAtTime(0.0001, at);
+      gain.gain.linearRampToValueAtTime(vol, at + Math.min(0.02, dur / 4));
+      gain.gain.setValueAtTime(vol, at + dur * 0.7);
+      gain.gain.exponentialRampToValueAtTime(0.001, at + dur);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(at);
+      vib.start(at);
+      osc.stop(at + dur + 0.02);
+      vib.stop(at + dur + 0.02);
+    };
 
-    this.bgmInterval = window.setInterval(() => {
-      if (this.isMuted || !this.ctx) return;
-      const bassFreq = bassline[this.bgmStep % bassline.length];
-      const whistleFreq = whistleNotes[this.bgmStep % whistleNotes.length];
-      this.bgmStep++;
+    const pah = (freq: number, at: number, dur: number, vol: number, type: OscillatorType = 'triangle') => {
+      const ctx = this.ctx!;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, at);
+      gain.gain.setValueAtTime(vol, at);
+      gain.gain.exponentialRampToValueAtTime(0.001, at + dur);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(at);
+      osc.stop(at + dur);
+    };
 
-      const now = this.ctx.currentTime;
+    /** The engine chug: a soft low thump that follows the paddle wheel. */
+    const chug = (at: number, strong: boolean) => {
+      const ctx = this.ctx!;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(strong ? 62 : 55, at);
+      osc.frequency.exponentialRampToValueAtTime(38, at + 0.09);
+      gain.gain.setValueAtTime(strong ? 0.075 : 0.045, at);
+      gain.gain.exponentialRampToValueAtTime(0.001, at + 0.1);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(at);
+      osc.stop(at + 0.11);
+    };
 
-      // 1. Bassline pulse
-      const oscBass = this.ctx.createOscillator();
-      const gainBass = this.ctx.createGain();
-      oscBass.type = 'triangle';
-      oscBass.frequency.setValueAtTime(bassFreq, now);
-      gainBass.gain.setValueAtTime(0.04, now);
-      gainBass.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-      oscBass.connect(gainBass);
-      gainBass.connect(this.ctx.destination);
-      oscBass.start(now);
-      oscBass.stop(now + 0.15);
+    // One 8-beat bar at ~72 BPM (beat = 333ms): OOM-pah stride bass under a
+    // signature steamboat whistle call. Public-domain cartoon-era idiom.
+    // Whistle: two short calls, then a long answered blast.
+    const beat = 0.3333;
+    const bar = beat * 8;
+    const G4 = 392.0, A4 = 440.0, C5 = 523.25, D5 = 587.33, E5 = 659.25, C6 = 1046.5;
 
-      // 2. Riverboat whistle (pure sine wave with steam vibrato)
-      if (whistleFreq > 0) {
-        const oscWhistle = this.ctx.createOscillator();
-        const gainWhistle = this.ctx.createGain();
-        oscWhistle.type = 'sine';
-        oscWhistle.frequency.setValueAtTime(whistleFreq, now);
-        // Slight cartoon whistle pitch glide
-        oscWhistle.frequency.exponentialRampToValueAtTime(whistleFreq * 1.02, now + 0.14);
-        gainWhistle.gain.setValueAtTime(0.06, now);
-        gainWhistle.gain.exponentialRampToValueAtTime(0.005, now + 0.15);
-        oscWhistle.connect(gainWhistle);
-        gainWhistle.connect(this.ctx.destination);
-        oscWhistle.start(now);
-        oscWhistle.stop(now + 0.15);
+    const scheduleBar = (base: number, phrase: number) => {
+      for (let b = 0; b < 8; b++) {
+        chug(base + b * beat, b % 2 === 0);
       }
-    }, tempoMs);
+      const alternator = phrase % 2;
+      // stride bass: root on 1, 3, 5, 7; fifth on 2, 4, 6, 8
+      const roots = alternator === 0 ? [98.0, 130.81] : [110.0, 146.83];
+      for (let b = 0; b < 8; b++) {
+        const at = base + b * beat;
+        if (b % 2 === 0) pah(roots[(b / 2) % 2], at, 0.22, 0.06);
+        else pah(roots[1] * 2, at, 0.1, 0.03, 'square'); // offbeat clip
+      }
+      if (alternator === 0) {
+        // Phrase A: "tur-tur TUUUR - tu tur TUUUR" whistle call
+        whistle(C5, base + 0 * beat, 0.32);
+        whistle(E5, base + 1 * beat, 0.32);
+        whistle(G4, base + 2 * beat, 1.0);
+        whistle(C5, base + 4 * beat, 0.32);
+        whistle(D5, base + 5 * beat, 0.32);
+        whistle(E5, base + 6 * beat, 1.4);
+      } else {
+        // Phrase B: answer — one soft call, then the big blow-off.
+        whistle(D5, base + 0 * beat, 0.24);
+        whistle(C5, base + 1 * beat, 0.24);
+        whistle(C6, base + 2 * beat, 0.9);
+        whistle(A4, base + 5 * beat, 0.35);
+        whistle(G4, base + 6 * beat, 1.5);
+      }
+    };
+
+    let phrase = 0;
+    let nextBar = this.ctx.currentTime + 0.12;
+    this.bgmInterval = window.setInterval(() => {
+      if (this.isMuted) return;
+      if (!this.ctx) { this.ctx = null as any; return; }
+      const ctx = this.ctx;
+      while (nextBar < ctx.currentTime + 1.6) {
+        scheduleBar(nextBar, phrase++);
+        nextBar += bar;
+      }
+      // Keep the firebox lit: startBgm scheduled ahead, so rewind the cursor
+      // if the tab throttled timers and fell behind.
+      if (nextBar < ctx.currentTime) nextBar = ctx.currentTime + 0.05;
+    }, 700);
   }
 }

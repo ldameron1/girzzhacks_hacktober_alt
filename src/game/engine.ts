@@ -455,7 +455,8 @@ export class GameEngine {
   private renderBackground() {
     const time = performance.now() / 1000;
 
-    // 1928 Vintage Mississippi River Twilight Sky (Warm parchment-amber to vintage cartoon dusk)
+    // Ink-and-wash Mississippi twilight: navy sky, brass moon, and a warm
+    // horizon that makes the deckhand silhouette read like a hand-inked cel.
     if (!this.backgroundGradient || this.backgroundGradientHeight !== this.canvas.height) {
       this.backgroundGradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
       this.backgroundGradient.addColorStop(0, '#101827');   // Ink-blue night
@@ -489,6 +490,19 @@ export class GameEngine {
     this.ctx.arc(this.canvas.width - 128, 69, 27, 0, Math.PI * 2);
     this.ctx.fill();
 
+    // Long moonlit bands suggest open water without competing with gameplay.
+    this.ctx.save();
+    this.ctx.globalAlpha = 0.09;
+    this.ctx.fillStyle = '#f6d88c';
+    this.ctx.beginPath();
+    this.ctx.moveTo(this.canvas.width - 190, 104);
+    this.ctx.lineTo(this.canvas.width - 60, 104);
+    this.ctx.lineTo(this.canvas.width - 18, 220);
+    this.ctx.lineTo(this.canvas.width - 250, 220);
+    this.ctx.closePath();
+    this.ctx.fill();
+    this.ctx.restore();
+
     // Original Halloween silhouettes: simple bats and river fog, not
     // references to any copyrighted character or asset.
     this.ctx.fillStyle = 'rgba(10, 15, 25, 0.82)';
@@ -503,6 +517,28 @@ export class GameEngine {
       this.ctx.quadraticCurveTo(bx + 9, by - 8 + drift, bx, by + drift);
       this.ctx.fill();
     });
+
+    // Distant stern and smokestacks: a layered ink silhouette anchors the
+    // setting as a riverboat rather than a generic night platform.
+    this.ctx.save();
+    this.ctx.fillStyle = 'rgba(7, 16, 23, 0.72)';
+    this.ctx.beginPath();
+    this.ctx.moveTo(18, 220);
+    this.ctx.lineTo(112, 220);
+    this.ctx.lineTo(136, 205);
+    this.ctx.lineTo(218, 205);
+    this.ctx.lineTo(246, 220);
+    this.ctx.lineTo(304, 220);
+    this.ctx.lineTo(320, 232);
+    this.ctx.lineTo(0, 232);
+    this.ctx.closePath();
+    this.ctx.fill();
+    this.ctx.fillRect(92, 178, 18, 28);
+    this.ctx.fillRect(188, 168, 18, 37);
+    this.ctx.fillStyle = 'rgba(213, 168, 93, 0.38)';
+    this.ctx.fillRect(94, 181, 14, 3);
+    this.ctx.fillRect(190, 171, 14, 3);
+    this.ctx.restore();
 
     // Billowing warm steam puffs from the ship's engine.
     this.ctx.fillStyle = 'rgba(245, 240, 232, 0.16)';
