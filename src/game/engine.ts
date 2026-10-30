@@ -663,10 +663,6 @@ export class GameEngine {
     }
     this.ctx.stroke();
 
-    // "SOLVABLE ROUTE" badge
-    this.ctx.fillStyle = '#22c55e';
-    this.ctx.font = 'bold 12px monospace';
-    this.ctx.fillText('~ ESTIMATED CLEARANCE PATH', startX + 30, startY - 20);
     this.ctx.restore();
   }
 }

@@ -37,7 +37,7 @@ body {
 }
 
 .app-container {
-  max-width: 1380px;
+  max-width: 1560px;
   margin: 0 auto;
   padding: 16px;
   display: flex;
@@ -116,7 +116,7 @@ body {
 /* Main Layout Grid */
 .main-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1.92fr) minmax(320px, 1fr);
+  grid-template-columns: minmax(0, 2.6fr) minmax(320px, 1fr);
   gap: 18px;
   align-items: start;
 }

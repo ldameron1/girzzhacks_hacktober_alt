@@ -124,7 +124,7 @@ export class OverseerTerminal {
 
   private renderRequestHistory() {
     if (!this.requestFeedElem) return;
-    const history = this.readHistory();
+    const history = this.readHistory().slice(0, 5);
     this.requestFeedElem.replaceChildren();
     if (!history.length) {
       this.requestFeedElem.innerHTML = '<div class="feed-empty">Death-triggered mutation requests will appear here.</div>';
