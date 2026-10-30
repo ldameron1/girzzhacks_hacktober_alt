@@ -1,3 +1,5 @@
+Due to time constraints, this repository was vibe-coded entirely.
+
 # GemmaKaizo: AI-Powered Adaptive Rage Platformer
 > **GrizzHacks 2026 / Hacktoberfest Project**  
 > **Track:** Best Use of Gemma 4 (Google Generative AI)
