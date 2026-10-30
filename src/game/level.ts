@@ -289,30 +289,75 @@ export class Level {
 
   private renderCrumblingBlock(ctx: CanvasRenderingContext2D, px: number, py: number, key: string) {
     const state = this.dynamicState.get(key);
-    ctx.fillStyle = '#78716c';
-    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+    const isShaking = state?.crumbleTimer !== undefined && !state?.crumbled;
 
-    // Cracks
+    // Shake offset when actively crumbling
+    const shakeX = isShaking ? (Math.random() - 0.5) * 4 : 0;
+    const shakeY = isShaking ? (Math.random() - 0.5) * 3 : 0;
+
+    ctx.fillStyle = isShaking ? '#a8a29e' : '#78716c';
+    ctx.fillRect(px + shakeX, py + shakeY, TILE_SIZE, TILE_SIZE);
+
+    // Crack lines
     ctx.strokeStyle = '#292524';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(px + 4, py + 4);
-    ctx.lineTo(px + 16, py + 16);
-    ctx.lineTo(px + 28, py + 8);
+    ctx.moveTo(px + shakeX + 4, py + shakeY + 4);
+    ctx.lineTo(px + shakeX + 16, py + shakeY + 16);
+    ctx.lineTo(px + shakeX + 28, py + shakeY + 8);
     ctx.stroke();
 
-    if (state?.crumbleTimer !== undefined) {
-      // Shaking highlight
+    // More cracks when about to collapse
+    if (isShaking) {
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(px + shakeX + 8, py + shakeY + 24);
+      ctx.lineTo(px + shakeX + 22, py + shakeY + 18);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(px + shakeX + 20, py + shakeY + 28);
+      ctx.lineTo(px + shakeX + 30, py + shakeY + 12);
+      ctx.stroke();
+
+      // Danger indicator
       ctx.fillStyle = '#ef4444';
-      ctx.fillRect(px + 2, py + 2, 4, 4);
+      ctx.font = 'bold 10px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('!', px + 16, py - 4);
     }
   }
 
   private renderSpring(ctx: CanvasRenderingContext2D, px: number, py: number) {
-    ctx.fillStyle = '#38bdf8';
-    ctx.fillRect(px + 4, py + 16, 24, 16);
-    ctx.fillStyle = '#0284c7';
-    ctx.fillRect(px + 2, py + 12, 28, 4);
+    // Base platform
+    ctx.fillStyle = '#1e3a5f';
+    ctx.fillRect(px + 2, py + 22, 28, 10);
+
+    // Spring coil visual
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(px + 6, py + 22);
+    ctx.lineTo(px + 10, py + 14);
+    ctx.lineTo(px + 14, py + 22);
+    ctx.lineTo(px + 18, py + 14);
+    ctx.lineTo(px + 22, py + 22);
+    ctx.lineTo(px + 26, py + 14);
+    ctx.stroke();
+
+    // Spring pad on top
+    ctx.fillStyle = '#0ea5e9';
+    ctx.fillRect(px + 4, py + 10, 24, 6);
+
+    // Arrow indicator
+    ctx.fillStyle = '#7dd3fc';
+    ctx.beginPath();
+    ctx.moveTo(px + 16, py + 2);
+    ctx.lineTo(px + 10, py + 9);
+    ctx.lineTo(px + 22, py + 9);
+    ctx.closePath();
+    ctx.fill();
   }
 
   private renderCheckpoint(ctx: CanvasRenderingContext2D, px: number, py: number) {

@@ -11,7 +11,8 @@ export interface EngineCallbacks {
   onTelemetryUpdate: (telemetry: any) => void;
   onGemmaArchitectUpdate: (data: any) => void;
   onVictory: () => void;
-  onDeath: (cause: string, totalDeaths: number) => void;
+  onDeath: (cause: string, totalDeaths: number, consecutive: number) => void;
+  onGameOver: (consecutiveDeaths: number, stats: any) => void;
 }
 
 export class GameEngine {
@@ -30,6 +31,7 @@ export class GameEngine {
   public cameraX: number = 0;
   public showGhostPath: boolean = false;
   public isPaused: boolean = false;
+  public totalMutationsApplied: number = 0;
 
   private isRunning: boolean = false;
   private lastTime: number = 0;
@@ -229,6 +231,11 @@ export class GameEngine {
     // Handle Death & Respawn
     if (this.player.isDead) {
       this.respawnTimer += dt;
+      if (this.player.isGameOver) {
+        this.isPaused = true;
+        this.callbacks.onGameOver(this.player.consecutiveDeaths, this.telemetry.exportPayload());
+        return;
+      }
       if (this.respawnTimer >= 1.2) {
         this.respawnPlayer();
       }
@@ -245,7 +252,7 @@ export class GameEngine {
     this.player.kill(cause, this.audio);
     this.telemetry.recordDeath(this.player.x, this.player.y, cause);
     this.spawnParticles(this.player.x + 11, this.player.y + 15, 25, '#ef4444', 4);
-    this.callbacks.onDeath(cause, this.telemetry.totalDeaths);
+    this.callbacks.onDeath(cause, this.telemetry.totalDeaths, this.player.consecutiveDeaths);
 
     // Call Gemma 4 Kaizo Architect to adaptively mutate level
     this.triggerGemmaMutation();
@@ -276,6 +283,7 @@ export class GameEngine {
 
         // Apply newly accepted mutations to live game
         if (data.mutations && Array.isArray(data.mutations)) {
+          this.totalMutationsApplied += data.mutations.length;
           data.mutations.forEach((m: any) => {
             if (m.type === 'KAIZO_BLOCK') {
               this.level.setKaizo(m.x, m.y);

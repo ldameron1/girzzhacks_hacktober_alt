@@ -453,3 +453,124 @@ canvas#game-canvas {
   color: #86efac;
   line-height: 1.3;
 }
+
+/* Start Screen */
+.start-box {
+  max-width: 460px;
+}
+
+.start-title {
+  font-family: var(--font-retro);
+  font-size: 2rem;
+  color: #f5f0e8;
+  letter-spacing: 3px;
+  text-shadow: 0 0 12px rgba(245, 240, 232, 0.5);
+}
+
+.start-title .red {
+  color: var(--accent-red);
+}
+
+.start-subtitle {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+  line-height: 1.5;
+}
+
+.start-features {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--accent-cyan);
+}
+
+.start-hint {
+  font-size: 0.7rem;
+  color: #6b7280;
+}
+
+.pulse-btn {
+  animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 8px rgba(16, 185, 129, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.7); }
+}
+
+/* Death Banner */
+.death-banner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.85);
+  border: 2px solid var(--accent-red);
+  padding: 16px 32px;
+  border-radius: 8px;
+  font-family: var(--font-retro);
+  font-size: 0.85rem;
+  color: var(--accent-red);
+  text-align: center;
+  z-index: 5;
+  animation: death-flash 0.3s ease-out;
+  pointer-events: none;
+}
+
+.death-banner.hidden {
+  display: none;
+}
+
+@keyframes death-flash {
+  0% { transform: translate(-50%, -50%) scale(1.3); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+/* Game Over Overlay */
+.gameover-box {
+  max-width: 500px;
+  border-color: var(--accent-red) !important;
+}
+
+.gameover-title {
+  font-family: var(--font-retro);
+  font-size: 1.8rem;
+  color: var(--accent-red);
+  text-shadow: 0 0 20px rgba(239, 68, 68, 0.7);
+  animation: gameover-pulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes gameover-pulse {
+  0% { text-shadow: 0 0 10px rgba(239, 68, 68, 0.4); }
+  100% { text-shadow: 0 0 30px rgba(239, 68, 68, 0.9); }
+}
+
+.gameover-sub {
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+
+.gameover-taunt {
+  font-size: 1rem;
+  color: #e9d5ff;
+  font-style: italic;
+  padding: 8px;
+  border-left: 3px solid var(--accent-purple);
+  background: rgba(168, 85, 247, 0.1);
+}
+
+.gameover-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  text-align: left;
+  background: #0f172a;
+  padding: 10px 16px;
+  border-radius: 6px;
+}
+
+.stat-label {
+  color: var(--text-dim);
+}

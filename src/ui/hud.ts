@@ -5,6 +5,7 @@ export class GameHUD {
   private brutalityElem: HTMLElement;
   private rageBarElem: HTMLElement;
   private botBadgeElem: HTMLElement;
+  private mutationsElem: HTMLElement;
 
   constructor() {
     this.deathsElem = document.getElementById('hud-deaths')!;
@@ -13,9 +14,10 @@ export class GameHUD {
     this.brutalityElem = document.getElementById('hud-brutality')!;
     this.rageBarElem = document.getElementById('hud-rage-fill')!;
     this.botBadgeElem = document.getElementById('hud-bot-badge')!;
+    this.mutationsElem = document.getElementById('hud-mutations')!;
   }
 
-  update(deaths: number, coins: number, furthestX: number, brutality: number, botActive: boolean) {
+  update(deaths: number, coins: number, furthestX: number, brutality: number, botActive: boolean, totalMutations: number = 0) {
     if (this.deathsElem) this.deathsElem.textContent = `${deaths}`;
     if (this.coinsElem) this.coinsElem.textContent = `${coins}`;
 
@@ -35,6 +37,10 @@ export class GameHUD {
     if (this.botBadgeElem) {
       this.botBadgeElem.textContent = botActive ? '🤖 AI BOT DRIVER' : '🎮 HUMAN PLAYER';
       this.botBadgeElem.className = botActive ? 'badge bot-active' : 'badge human-active';
+    }
+
+    if (this.mutationsElem) {
+      this.mutationsElem.textContent = `${totalMutations}`;
     }
   }
 }

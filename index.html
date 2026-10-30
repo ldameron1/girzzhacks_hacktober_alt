@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GemmaKaizo: AI-Powered Adaptive Rage Mario (Gemma 4)</title>
+  <title>GemmaKaizo: AI-Powered Adaptive Rage Platformer (Steamboat Willie × Gemma 4)</title>
   <link rel="stylesheet" href="/src/style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -49,11 +49,43 @@
             <span class="hud-label">RAGE METER</span>
             <div class="rage-bar"><div id="hud-rage-fill" class="rage-fill"></div></div>
           </div>
+          <div class="hud-item">
+            <span class="hud-label">MUTATIONS</span>
+            <span id="hud-mutations" class="hud-val neon">0</span>
+          </div>
         </div>
 
         <!-- Canvas Container -->
         <div class="canvas-wrapper">
           <canvas id="game-canvas" width="800" height="480"></canvas>
+          <div id="start-overlay" class="overlay">
+            <div class="overlay-box start-box">
+              <h2 class="start-title">GEMMA<span class="red">KAIZO</span></h2>
+              <p class="start-subtitle">Steamboat Willie vs. Gemma 4 — the AI is watching. It will learn your habits. It will punish your mistakes.</p>
+              <div class="start-features">
+                <span>🧠 Adaptive AI Game Master</span>
+                <span>☠️ Dynamic Kaizo Traps</span>
+                <span>⚡ Speedrunner Fairness Guaranteed</span>
+              </div>
+              <button id="btn-start" class="btn primary-btn pulse-btn">PRESS START</button>
+              <p class="start-hint">or press any key</p>
+            </div>
+          </div>
+          <div id="death-banner" class="death-banner hidden"></div>
+          <div id="gameover-overlay" class="overlay hidden">
+            <div class="overlay-box gameover-box">
+              <h2 class="gameover-title">GAME OVER</h2>
+              <p class="gameover-sub">Gemma 4 has defeated you after <span id="gameover-deaths">5</span> consecutive deaths.</p>
+              <p id="gameover-taunt" class="gameover-taunt">"You were an interesting subject. Briefly."</p>
+              <div class="gameover-stats">
+                <div><span class="stat-label">Mutations Deployed:</span> <span id="gameover-mutations">0</span></div>
+                <div><span class="stat-label">Furthest Progress:</span> <span id="gameover-progress">0%</span></div>
+                <div><span class="stat-label">Coins Grabbed:</span> <span id="gameover-coins">0</span></div>
+              </div>
+              <button id="btn-continue" class="btn primary-btn">CONTINUE (RESET DEATHS)</button>
+              <button id="btn-fullreset" class="btn danger-btn">FULL STAGE RESET</button>
+            </div>
+          </div>
           <div id="victory-overlay" class="overlay hidden">
             <div class="overlay-box">
               <h2 class="victory-title">STAGE CLEARED!</h2>
