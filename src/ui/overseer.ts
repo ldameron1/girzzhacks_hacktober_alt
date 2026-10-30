@@ -1,7 +1,6 @@
 export class OverseerTerminal {
   private static readonly HISTORY_KEY = 'gemmakaizo-request-feed';
   private static readonly MAX_HISTORY = 12;
-  private tauntElem: HTMLElement;
   private archetypeElem: HTMLElement;
   private diagnosisElem: HTMLElement;
   private mutationsListElem: HTMLElement;
@@ -17,10 +16,7 @@ export class OverseerTerminal {
   private responseBlurbElem: HTMLElement;
   private responseStateElem: HTMLElement;
 
-  private typewriterInterval: number | null = null;
-
   constructor() {
-    this.tauntElem = document.getElementById('overseer-taunt')!;
     this.archetypeElem = document.getElementById('overseer-archetype')!;
     this.diagnosisElem = document.getElementById('overseer-diagnosis')!;
     this.mutationsListElem = document.getElementById('overseer-mutations')!;
@@ -47,7 +43,7 @@ export class OverseerTerminal {
     const time = new Date(entry.receivedAt || Date.now()).toLocaleTimeString();
     const label = isResponse ? '← RESPONSE' : '→ POST /api/mutate';
     const detail = isResponse
-    ? `${entry.response?.modelUsed || 'model'} · ${entry.response?.mutations?.length || 0} accepted · ${entry.response?.rejectedMutations?.length || 0} rejected`
+      ? `${entry.response?.modelUsed || 'model'} · ${entry.response?.mutations?.length || 0} accepted · ${entry.response?.rejectedMutations?.length || 0} rejected`
       : `telemetry · ${entry.request?.telemetry?.totalDeaths || 0} deaths`;
     line.textContent = `${time}  ${label}  ${detail}`;
     this.apiMonitorLines.prepend(line);
@@ -90,8 +86,7 @@ export class OverseerTerminal {
     const now = new Date().toLocaleTimeString();
     const lines = [
       `telemetry ${now} · x=${Math.round(telemetry.furthestX || 0)} · deaths=${telemetry.totalDeaths || 0}`,
-      `behavior scan · speed=${Number(telemetry.averageSpeed || 0).toFixed(1)} · jumps=${telemetry.jumpCount || 0}`,
-      `difficulty index · ${(Number(telemetry.currentDifficulty || 0)).toFixed(1)}`
+      `behavior scan · speed=${Number(telemetry.averageSpeed || 0).toFixed(1)} · jumps=${telemetry.jumpCount || 0}`
     ];
     this.liveStreamElem.replaceChildren(...lines.map((line) => {
       const item = document.createElement('div');
@@ -164,7 +159,6 @@ export class OverseerTerminal {
     }
 
     if (this.fairnessElem) {
-      const rejectedCount = Array.isArray(data.rejectedMutations) ? data.rejectedMutations.length : 0;
       const patchStatus = data.patchedLevel ? 'level patch applied' : 'no level patch returned';
       this.fairnessElem.textContent =
         `Model estimate: ${data.fairnessAudit || 'No audit returned.'} ` +
@@ -183,19 +177,17 @@ export class OverseerTerminal {
 
     if (this.responseBlurbElem) {
       this.responseBlurbElem.textContent =
-        `${diagnosis} · ${data.modelUsed || 'Provider not reported'} · ` +
-        `${Number.isFinite(Number(data.latencyMs)) ? `${Math.max(0, Math.round(Number(data.latencyMs)))}ms` : 'latency not reported'} · ` +
-        `${acceptedCount} accepted / ${rejectedCount} rejected · fallback ${fallbackUsed ? 'used' : 'not used'}`;
+        `${
+          [diagnosis, String(data.modelUsed || 'Provider not reported'),
+          Number.isFinite(Number(data.latencyMs)) ? `${Math.max(0, Math.round(Number(data.latencyMs)))}ms` : 'latency not reported',
+          `${acceptedCount} accepted / ${rejectedCount} rejected`]
+            .filter(Boolean).join(' · ')
+        } · fallback ${fallbackUsed ? 'used' : 'not used'}`;
     }
 
     if (this.responseStateElem) {
       this.responseStateElem.textContent = fallbackUsed ? 'FALLBACK' : 'LIVE MODEL';
       this.responseStateElem.className = `response-state ${fallbackUsed ? 'fallback' : 'live'}`;
-    }
-
-    // Typewriter effect for sarcastic taunt
-    if (this.tauntElem && data.taunt) {
-      this.typewriteText(`"${data.taunt}"`);
     }
 
     // Render list of deployed Kaizo mutations
@@ -230,22 +222,5 @@ export class OverseerTerminal {
   private truncate(value: string, maxLength = 150): string {
     const normalized = value.replace(/\s+/g, ' ').trim();
     return normalized.length > maxLength ? `${normalized.slice(0, maxLength - 1)}…` : normalized;
-  }
-
-  private typewriteText(text: string) {
-    if (this.typewriterInterval) {
-      clearInterval(this.typewriterInterval);
-    }
-    this.tauntElem.textContent = '';
-    let idx = 0;
-    this.typewriterInterval = window.setInterval(() => {
-      if (idx < text.length) {
-        this.tauntElem.textContent += text.charAt(idx);
-        idx++;
-      } else {
-        clearInterval(this.typewriterInterval!);
-        this.typewriterInterval = null;
-      }
-    }, 28);
   }
 }
