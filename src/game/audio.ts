@@ -13,7 +13,7 @@ export class AudioManager {
     // Initialized on first user interaction
   }
 
-  private initCtx() {
+  public initCtx() {
     if (!this.ctx) {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       this.ctx = new AudioCtx();

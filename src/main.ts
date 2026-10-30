@@ -44,6 +44,15 @@ window.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Unlock AudioContext on first user interaction
+  const unlockAudio = () => {
+    engine.audio.initCtx();
+    window.removeEventListener('click', unlockAudio);
+    window.removeEventListener('keydown', unlockAudio);
+  };
+  window.addEventListener('click', unlockAudio);
+  window.addEventListener('keydown', unlockAudio);
+
   // Start engine loop
   engine.start();
 
