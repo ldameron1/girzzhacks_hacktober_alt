@@ -342,6 +342,11 @@ export class Player implements Box {
       py = 0;
     }
 
+    // A compact ink keyline keeps the deckhand readable against moonlit fog.
+    ctx.fillStyle = 'rgba(5, 12, 18, 0.82)';
+    ctx.fillRect(px + 2, py + 2, 18, 27);
+    ctx.fillRect(px - 1, py + 24, 25, 5);
+
     // Brass cap and shadowed faceplate.
     ctx.fillStyle = '#172b35';
     ctx.fillRect(px + 4, py + 3, 14, 10);
@@ -353,6 +358,8 @@ export class Player implements Box {
     // Navy work coat with brass fasteners.
     ctx.fillStyle = '#203b48';
     ctx.fillRect(px + 4, py + 13, 14, 12);
+    ctx.fillStyle = '#31566a';
+    ctx.fillRect(px + 6, py + 14, 3, 10);
     ctx.fillStyle = '#d5a85d';
     ctx.fillRect(px + 10, py + 15, 2, 2);
     ctx.fillRect(px + 10, py + 20, 2, 2);

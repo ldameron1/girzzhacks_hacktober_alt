@@ -502,6 +502,8 @@ export class Level {
     // a stack of disconnected poles and flags.
     ctx.fillStyle = '#263746';
     ctx.fillRect(px + 14, py, 4, TILE_SIZE);
+    ctx.fillStyle = 'rgba(239, 216, 154, 0.22)';
+    ctx.fillRect(px + 10, py + 4, 3, 20);
     ctx.fillStyle = '#a98552';
     ctx.fillRect(px + 12, py + 1, 8, 2);
 
