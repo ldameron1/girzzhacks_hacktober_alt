@@ -24,6 +24,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   const engine = new GameEngine(canvas, {
     onTelemetryUpdate: (telemetry) => {
+      overseer.updateTelemetryStream(telemetry);
       hud.update(
         telemetry.totalDeaths,
         telemetry.coinsCollected,
@@ -33,7 +34,36 @@ window.addEventListener('DOMContentLoaded', () => {
         engine.totalMutationsApplied
       );
     },
+    onGemmaRequest: (entry) => {
+      overseer.recordRequest(entry);
+      overseer.updateApiMonitor(entry);
+      if (entry.kind === 'mutation-request') {
+        const telemetry = entry.request?.telemetry;
+        overseer.updateProofChain('telemetry', `${telemetry?.totalDeaths || 0} deaths · furthest X ${Math.round(telemetry?.furthestX || 0)}`);
+        overseer.updateProofChain(entry.status === 'retrying' ? 'retry' : 'request', entry.status === 'retrying' ? `Retry ${entry.attempt}/2 · POST /api/mutate` : 'POST /api/mutate · telemetry attached');
+      } else if (entry.kind === 'mutation-applied') {
+        overseer.updateProofChain('applied', `${entry.accepted} accepted · ${entry.rejected} rejected`);
+      } else if (entry.status === 'offline-fallback') {
+        overseer.updateProofChain('fallback', 'Retry exhausted · fallback reported honestly');
+      }
+    },
+    onBotToggle: (enabled) => btnBot?.classList.toggle('active', enabled),
+    onHeatmapToggle: (enabled) => btnHeatmap?.classList.toggle('active', enabled),
+    onGhostToggle: (enabled) => btnGhost?.classList.toggle('active', enabled),
     onGemmaArchitectUpdate: (data) => {
+      overseer.recordRequest({
+        kind: 'mutation-response',
+        status: data.modelUsed?.includes('Heuristic') ? 'offline-fallback' : 'model-response',
+        response: data,
+        receivedAt: new Date().toISOString()
+      });
+      overseer.updateProofChain('validated', `${data.mutations?.length || 0} accepted · ${data.rejectedMutations?.length || 0} rejected by server`);
+      overseer.updateApiMonitor({
+        kind: 'mutation-response',
+        status: data.modelUsed?.includes('Heuristic') ? 'offline-fallback' : 'model-response',
+        response: data,
+        receivedAt: new Date().toISOString()
+      });
       overseer.displayGemmaResponse(data);
       if (data.brutalityLevel) {
         engine.telemetry.currentDifficulty = data.brutalityLevel;
@@ -127,7 +157,9 @@ window.addEventListener('DOMContentLoaded', () => {
   btnFullReset?.addEventListener('click', () => {
     gameoverOverlay.classList.add('hidden');
     engine.level.createDefaultMap();
+    engine.resetAdaptiveMutations();
     engine.totalMutationsApplied = 0;
+    engine.telemetry.reset();
     engine.player.clearConsecutiveDeaths();
     engine.player.reset(3 * 32, 11 * 32);
     engine.telemetry.startNewRun(engine.player.x);
@@ -171,7 +203,9 @@ window.addEventListener('DOMContentLoaded', () => {
   const btnReset = document.getElementById('btn-reset')!;
   btnReset?.addEventListener('click', () => {
     engine.level.createDefaultMap();
+    engine.resetAdaptiveMutations();
     engine.totalMutationsApplied = 0;
+    engine.telemetry.reset();
     engine.player.clearConsecutiveDeaths();
     engine.player.reset(3 * 32, 11 * 32);
     engine.telemetry.startNewRun(engine.player.x);
@@ -183,6 +217,10 @@ window.addEventListener('DOMContentLoaded', () => {
 
   btnReplay?.addEventListener('click', () => {
     victoryOverlay.classList.add('hidden');
+    engine.level.createDefaultMap();
+    engine.resetAdaptiveMutations();
+    engine.totalMutationsApplied = 0;
+    engine.telemetry.reset();
     engine.player.clearConsecutiveDeaths();
     engine.player.reset(3 * 32, 11 * 32);
     engine.telemetry.startNewRun(engine.player.x);

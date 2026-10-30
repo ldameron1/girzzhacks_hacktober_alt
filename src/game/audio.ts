@@ -46,13 +46,14 @@ export class AudioManager {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
-    osc.type = 'square';
+    osc.type = 'triangle';
     const now = this.ctx.currentTime;
-    osc.frequency.setValueAtTime(150, now);
-    osc.frequency.exponentialRampToValueAtTime(600, now + 0.12);
+    // A small steam-whistle chirp, rather than a generic arcade blip.
+    osc.frequency.setValueAtTime(330, now);
+    osc.frequency.exponentialRampToValueAtTime(880, now + 0.16);
 
-    gain.gain.setValueAtTime(0.12, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+    gain.gain.setValueAtTime(0.08, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
 
     osc.connect(gain);
     gain.connect(this.ctx.destination);
@@ -69,13 +70,13 @@ export class AudioManager {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
-    osc.type = 'triangle';
+    osc.type = 'sine';
     const now = this.ctx.currentTime;
-    osc.frequency.setValueAtTime(280, now);
-    osc.frequency.exponentialRampToValueAtTime(70, now + 0.15);
+    osc.frequency.setValueAtTime(180, now);
+    osc.frequency.exponentialRampToValueAtTime(52, now + 0.18);
 
-    gain.gain.setValueAtTime(0.2, now);
-    gain.gain.linearRampToValueAtTime(0.01, now + 0.15);
+    gain.gain.setValueAtTime(0.16, now);
+    gain.gain.linearRampToValueAtTime(0.01, now + 0.18);
 
     osc.connect(gain);
     gain.connect(this.ctx.destination);
@@ -166,20 +167,21 @@ export class AudioManager {
     const osc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
-    osc.type = 'sawtooth';
+    osc.type = 'triangle';
     const now = this.ctx.currentTime;
-    osc.frequency.setValueAtTime(120, now);
-    osc.frequency.linearRampToValueAtTime(450, now + 0.1);
-    osc.frequency.linearRampToValueAtTime(90, now + 0.25);
+    // Two-note call: a low steam valve followed by a rising whistle.
+    osc.frequency.setValueAtTime(92, now);
+    osc.frequency.linearRampToValueAtTime(180, now + 0.12);
+    osc.frequency.linearRampToValueAtTime(520, now + 0.32);
 
-    gain.gain.setValueAtTime(0.2, now);
-    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+    gain.gain.setValueAtTime(0.15, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.32);
 
     osc.connect(gain);
     gain.connect(this.ctx.destination);
 
     osc.start(now);
-    osc.stop(now + 0.25);
+    osc.stop(now + 0.32);
   }
 
   playVictory() {
@@ -187,14 +189,15 @@ export class AudioManager {
     this.initCtx();
     if (!this.ctx) return;
 
-    const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50];
+    // Short ragtime-style riverboat fanfare.
+    const notes = [392.00, 523.25, 659.25, 523.25, 587.33, 783.99, 1046.50];
     const now = this.ctx.currentTime;
 
     notes.forEach((freq, idx) => {
       const osc = this.ctx!.createOscillator();
       const gain = this.ctx!.createGain();
 
-      osc.type = 'square';
+      osc.type = idx < 2 ? 'triangle' : 'sine';
       const startT = now + idx * 0.1;
       osc.frequency.setValueAtTime(freq, startT);
 
@@ -213,7 +216,7 @@ export class AudioManager {
     if (this.isMuted || this.bgmInterval) return;
     this.initCtx();
 
-    // 1928 Steamboat Willie whistle motif + jaunty ragtime bassline
+    // Vintage riverboat whistle motif + jaunty ragtime bassline
     const bassline = [110, 110, 130.81, 110, 146.83, 130.81, 110, 98];
     // Iconic 1928 cartoon whistle notes (G4, C5, D5, E5, G5, E5, D5, C5...)
     const whistleNotes = [392, 0, 523.25, 0, 587.33, 659.25, 0, 783.99, 659.25, 0, 587.33, 523.25, 0, 392, 523.25, 0];
@@ -239,7 +242,7 @@ export class AudioManager {
       oscBass.start(now);
       oscBass.stop(now + 0.15);
 
-      // 2. Steamboat Willie Whistle (Pure sine wave with steam vibrato)
+      // 2. Riverboat whistle (pure sine wave with steam vibrato)
       if (whistleFreq > 0) {
         const oscWhistle = this.ctx.createOscillator();
         const gainWhistle = this.ctx.createGain();

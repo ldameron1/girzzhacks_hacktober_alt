@@ -1,5 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert';
+import { LevelPatcher } from '../server/levelPatcher.ts';
+import { Level, TILE_SIZE } from '../src/game/level.ts';
+
+test('Level: fresh runs start before the midpoint checkpoint', () => {
+  const level = new Level();
+
+  assert.strictEqual(level.checkpointX, 3 * TILE_SIZE);
+  assert.strictEqual(level.checkpointY, 12 * TILE_SIZE - 30);
+});
 
 // 1. Test AABB collision math
 function checkAABB(a, b) {
@@ -57,6 +66,50 @@ test('LevelPatcher: Rejects out of bounds and preserves spawn zones', () => {
   assert.strictEqual(accepted.length, 1, 'Should accept 1 valid mutation');
   assert.strictEqual(accepted[0].x, 25);
 });
+
+function makeMutationLevel() {
+  const level = {
+    width: 20,
+    height: 10,
+    tiles: Array.from({ length: 10 }, () => Array(20).fill(0)),
+    enemies: [],
+    coins: []
+  };
+
+  // A supported top-surface tile at (10, 5).
+  level.tiles[5][10] = 1;
+  level.tiles[6][10] = 1;
+
+  // An unsupported, floating tile at (12, 5).
+  level.tiles[5][12] = 1;
+
+  return level;
+}
+
+for (const type of ['CRUMBLING_FLOOR', 'BOUNCE_TRAP']) {
+  test(`LevelPatcher: Rejects floating ${type} mutations`, () => {
+    const level = makeMutationLevel();
+    const mutation = { type, x: 12, y: 5, justification: 'Floating mutation' };
+
+    const result = LevelPatcher.applyMutations(level, [mutation]);
+
+    assert.deepStrictEqual(result.accepted, []);
+    assert.strictEqual(result.rejected.length, 1);
+    assert.strictEqual(result.level.tiles[5][12], 1, 'Floating tile should remain solid');
+  });
+
+  test(`LevelPatcher: Accepts ${type} mutations on a supported top surface`, () => {
+    const level = makeMutationLevel();
+    const mutation = { type, x: 10, y: 5, justification: 'Supported top surface' };
+    const expectedTile = type === 'CRUMBLING_FLOOR' ? 4 : 5;
+
+    const result = LevelPatcher.applyMutations(level, [mutation]);
+
+    assert.deepStrictEqual(result.accepted, [mutation]);
+    assert.deepStrictEqual(result.rejected, []);
+    assert.strictEqual(result.level.tiles[5][10], expectedTile);
+  });
+}
 
 // 3. Test Telemetry Serialization
 test('Telemetry: Correctly aggregates metrics and export payload', () => {

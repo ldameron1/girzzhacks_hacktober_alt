@@ -9,6 +9,10 @@ import { Physics } from './physics.js';
 
 export interface EngineCallbacks {
   onTelemetryUpdate: (telemetry: any) => void;
+  onGemmaRequest?: (entry: any) => void;
+  onBotToggle?: (enabled: boolean) => void;
+  onHeatmapToggle?: (enabled: boolean) => void;
+  onGhostToggle?: (enabled: boolean) => void;
   onGemmaArchitectUpdate: (data: any) => void;
   onVictory: () => void;
   onDeath: (cause: string, totalDeaths: number, consecutive: number) => void;
@@ -36,6 +40,13 @@ export class GameEngine {
   private isRunning: boolean = false;
   private lastTime: number = 0;
   private respawnTimer: number = 0;
+  private telemetryNotifyTimer = 0;
+  private mutationRequestInFlight = false;
+  private deathRecorded = false;
+  private runGeneration = 0;
+  private activeMutations: Array<{ type: string; x: number; y: number }> = [];
+  private backgroundGradient: CanvasGradient | null = null;
+  private backgroundGradientHeight = 0;
   private callbacks: EngineCallbacks;
 
   // Active keyboard state
@@ -76,6 +87,18 @@ export class GameEngine {
     // Add falling spikes over common gaps
     this.enemies.push(new FallingSpike(23 * TILE_SIZE + 6, 8 * TILE_SIZE));
     this.enemies.push(new FallingSpike(47 * TILE_SIZE + 6, 8 * TILE_SIZE));
+    for (const mutation of this.activeMutations) {
+      if (mutation.type === 'FALLING_SPIKE') {
+        this.enemies.push(new FallingSpike(mutation.x * TILE_SIZE, mutation.y * TILE_SIZE));
+      } else if (mutation.type === 'ENEMY_AMBUSH') {
+        this.enemies.push(new Gloomba(mutation.x * TILE_SIZE, mutation.y * TILE_SIZE));
+      }
+    }
+  }
+
+  resetAdaptiveMutations() {
+    this.activeMutations = [];
+    this.runGeneration++;
   }
 
   private setupInputListeners() {
@@ -103,13 +126,14 @@ export class GameEngine {
 
       // Hotkeys
       if (e.key === 'b' || e.key === 'B') {
-        this.bot.toggle();
+        this.callbacks.onBotToggle?.(this.bot.toggle());
       }
       if (e.key === 'h' || e.key === 'H') {
-        this.heatmap.toggle();
+        this.callbacks.onHeatmapToggle?.(this.heatmap.toggle());
       }
       if (e.key === 'g' || e.key === 'G') {
         this.showGhostPath = !this.showGhostPath;
+        this.callbacks.onGhostToggle?.(this.showGhostPath);
       }
     });
 
@@ -167,6 +191,11 @@ export class GameEngine {
     // Update telemetry
     if (!this.player.isDead && !this.player.hasWon) {
       this.telemetry.recordTick(dt, this.player, this.level, activeInput.sprint);
+      this.telemetryNotifyTimer += dt;
+      if (this.telemetryNotifyTimer >= 0.2) {
+        this.callbacks.onTelemetryUpdate(this.telemetry.exportPayload());
+        this.telemetryNotifyTimer = 0;
+      }
     }
 
     // Update level crumbling blocks
@@ -174,6 +203,11 @@ export class GameEngine {
 
     // Update player
     this.player.update(dt, activeInput, this.level, this.audio);
+    // Pit and spike-tile deaths originate inside Player.update; route them
+    // through the same telemetry/mutation pipeline as entity collisions.
+    if (this.player.isDead) {
+      this.handlePlayerDeath(this.player.deathCause || 'Unknown hazard');
+    }
 
     // Camera follows player smoothly
     const targetCameraX = Math.max(0, Math.min(
@@ -220,9 +254,10 @@ export class GameEngine {
     // Checkpoint reach
     const curTileX = Math.floor(this.player.x / TILE_SIZE);
     const curTileY = Math.floor(this.player.y / TILE_SIZE);
-    if (this.level.getTile(curTileX, curTileY) === TileType.CHECKPOINT) {
+    const checkpointTileY = Math.floor((this.player.y + this.player.height - 1) / TILE_SIZE);
+    if (this.level.getTile(curTileX, checkpointTileY) === TileType.CHECKPOINT) {
       this.level.checkpointX = curTileX * TILE_SIZE;
-      this.level.checkpointY = curTileY * TILE_SIZE;
+      this.level.checkpointY = 12 * TILE_SIZE - this.player.height;
     }
 
     // Update particles
@@ -248,8 +283,11 @@ export class GameEngine {
   }
 
   private handlePlayerDeath(cause: string) {
-    if (this.player.isDead) return;
-    this.player.kill(cause, this.audio);
+    if (this.deathRecorded || this.player.hasWon) return;
+    if (!this.player.isDead) {
+      this.player.kill(cause, this.audio);
+    }
+    this.deathRecorded = true;
     this.telemetry.recordDeath(this.player.x, this.player.y, cause);
     this.spawnParticles(this.player.x + 11, this.player.y + 15, 25, '#ef4444', 4);
     this.callbacks.onDeath(cause, this.telemetry.totalDeaths, this.player.consecutiveDeaths);
@@ -259,6 +297,9 @@ export class GameEngine {
   }
 
   private async triggerGemmaMutation() {
+    if (this.mutationRequestInFlight) return;
+    this.mutationRequestInFlight = true;
+    const requestGeneration = this.runGeneration;
     try {
       const payload = {
         telemetry: this.telemetry.exportPayload(),
@@ -271,43 +312,96 @@ export class GameEngine {
         }
       };
 
-      const res = await fetch('/api/mutate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (res.ok) {
-        const data = await res.json();
+      let data: any;
+      let lastError: unknown;
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        this.callbacks.onGemmaRequest?.({
+          kind: 'mutation-request',
+          status: attempt === 1 ? 'sending' : 'retrying',
+          attempt,
+          request: payload,
+          receivedAt: new Date().toISOString()
+        });
+        try {
+          const res = await fetch('/api/mutate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          if (!res.ok) throw new Error(`Mutation API returned ${res.status}`);
+          data = await res.json();
+          break;
+        } catch (error) {
+          lastError = error;
+          if (attempt === 1) await new Promise(resolve => setTimeout(resolve, 350));
+        }
+      }
+      if (!data) throw lastError || new Error('Mutation API unavailable after retry');
+      if (data) {
+        if (requestGeneration !== this.runGeneration) return;
         this.callbacks.onGemmaArchitectUpdate(data);
 
         // Apply newly accepted mutations to live game
         if (data.mutations && Array.isArray(data.mutations)) {
-          this.totalMutationsApplied += data.mutations.length;
+          let rebuildEntities = false;
           data.mutations.forEach((m: any) => {
+            if (!Number.isInteger(m.x) || !Number.isInteger(m.y) ||
+                m.x < 0 || m.x >= this.level.width ||
+                m.y < 0 || m.y >= this.level.height) {
+              return;
+            }
             if (m.type === 'KAIZO_BLOCK') {
               this.level.setKaizo(m.x, m.y);
               this.spawnParticles(m.x * TILE_SIZE + 16, m.y * TILE_SIZE + 16, 12, '#a855f7');
             } else if (m.type === 'CRUMBLING_FLOOR') {
               this.level.tiles[m.y][m.x] = TileType.CRUMBLING;
-            } else if (m.type === 'CEILING_SPIKE' || m.type === 'FALLING_SPIKE') {
-              this.enemies.push(new FallingSpike(m.x * TILE_SIZE, m.y * TILE_SIZE));
+            } else if (m.type === 'CEILING_SPIKE') {
+              this.level.tiles[m.y][m.x] = TileType.SPIKE;
+            } else if (m.type === 'FALLING_SPIKE') {
+              rebuildEntities = true;
             } else if (m.type === 'DECEPTIVE_COIN') {
               this.level.coins.push({ x: m.x, y: m.y, collected: false });
             } else if (m.type === 'ENEMY_AMBUSH') {
-              this.enemies.push(new Gloomba(m.x * TILE_SIZE, m.y * TILE_SIZE));
+              rebuildEntities = true;
+            } else if (m.type === 'BOUNCE_TRAP') {
+              this.level.tiles[m.y][m.x] = TileType.SPRING;
+            } else {
+              return;
             }
+            this.activeMutations.push({ type: m.type, x: m.x, y: m.y });
+            this.totalMutationsApplied++;
+          });
+          if (rebuildEntities) {
+            this.resetLevelEntities();
+          }
+          this.callbacks.onGemmaRequest?.({
+            kind: 'mutation-applied',
+            status: 'applied',
+            accepted: data.mutations.length,
+            rejected: data.rejectedMutations?.length || 0,
+            receivedAt: new Date().toISOString()
           });
           this.audio.playMutationGlitch();
         }
       }
     } catch (err) {
+      if (requestGeneration !== this.runGeneration) return;
+      this.callbacks.onGemmaRequest?.({
+        kind: 'mutation',
+        status: 'offline-fallback',
+        request: { telemetry: this.telemetry.exportPayload() },
+        error: `Request failed after retry; local fallback remains active. ${String(err)}`,
+        receivedAt: new Date().toISOString()
+      });
       console.warn('Gemma mutation request failed:', err);
+    } finally {
+      this.mutationRequestInFlight = false;
     }
   }
 
   private respawnPlayer() {
     this.respawnTimer = 0;
+    this.deathRecorded = false;
     this.player.reset(this.level.checkpointX, this.level.checkpointY);
     this.telemetry.startNewRun(this.player.x);
     this.resetLevelEntities();
@@ -362,16 +456,56 @@ export class GameEngine {
     const time = performance.now() / 1000;
 
     // 1928 Vintage Mississippi River Twilight Sky (Warm parchment-amber to vintage cartoon dusk)
-    const skyGrad = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
-    skyGrad.addColorStop(0, '#1c1917');   // Dark vintage ink
-    skyGrad.addColorStop(0.4, '#292524'); // River mist
-    skyGrad.addColorStop(0.75, '#451a03');// Warm sepia sunset
-    skyGrad.addColorStop(1, '#0c4a6e');   // Deep river twilight
+    if (!this.backgroundGradient || this.backgroundGradientHeight !== this.canvas.height) {
+      this.backgroundGradient = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+      this.backgroundGradient.addColorStop(0, '#101827');   // Ink-blue night
+      this.backgroundGradient.addColorStop(0.42, '#26324a'); // Indigo haze
+      this.backgroundGradient.addColorStop(0.78, '#704332'); // Sepia horizon
+      this.backgroundGradient.addColorStop(1, '#102f45');   // River shadow
+      this.backgroundGradientHeight = this.canvas.height;
+    }
+    const skyGrad = this.backgroundGradient;
     this.ctx.fillStyle = skyGrad;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
-    // Billowing white cartoon steam puffs from the ship's engine
-    this.ctx.fillStyle = 'rgba(245, 240, 232, 0.25)';
+    // A restrained night sky gives the deck a clear setting instead of a flat fill.
+    this.ctx.fillStyle = 'rgba(255, 235, 180, 0.7)';
+    const stars = [[72, 34], [164, 58], [286, 28], [418, 72], [566, 42], [704, 66]];
+    stars.forEach(([sx, sy], index) => {
+      const twinkle = 1 + Math.sin(time * 1.5 + index) * 0.35;
+      this.ctx.fillRect(sx - (this.cameraX * 0.04) % 800, sy, twinkle * 2, twinkle * 2);
+    });
+
+    this.ctx.fillStyle = 'rgba(255, 224, 160, 0.18)';
+    this.ctx.beginPath();
+    this.ctx.arc(this.canvas.width - 130, 86, 42, 0, Math.PI * 2);
+    this.ctx.fill();
+    this.ctx.fillStyle = 'rgba(255, 238, 190, 0.9)';
+    this.ctx.beginPath();
+    this.ctx.arc(this.canvas.width - 140, 78, 28, 0, Math.PI * 2);
+    this.ctx.fill();
+    this.ctx.fillStyle = '#26324a';
+    this.ctx.beginPath();
+    this.ctx.arc(this.canvas.width - 128, 69, 27, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // Original Halloween silhouettes: simple bats and river fog, not
+    // references to any copyrighted character or asset.
+    this.ctx.fillStyle = 'rgba(10, 15, 25, 0.82)';
+    const bats = [[150, 112], [380, 92], [650, 128]];
+    bats.forEach(([bx, by], index) => {
+      const drift = Math.sin(time * 1.4 + index) * 5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(bx, by + drift);
+      this.ctx.quadraticCurveTo(bx - 9, by - 8 + drift, bx - 17, by + 1 + drift);
+      this.ctx.quadraticCurveTo(bx - 12, by + 10 + drift, bx, by + 5 + drift);
+      this.ctx.quadraticCurveTo(bx + 12, by + 10 + drift, bx + 17, by + 1 + drift);
+      this.ctx.quadraticCurveTo(bx + 9, by - 8 + drift, bx, by + drift);
+      this.ctx.fill();
+    });
+
+    // Billowing warm steam puffs from the ship's engine.
+    this.ctx.fillStyle = 'rgba(245, 240, 232, 0.16)';
     for (let s = 0; s < 6; s++) {
       const sx = ((s * 150) - (this.cameraX * 0.15) + (time * 30)) % (this.canvas.width + 120) - 60;
       const sy = 40 + Math.sin(time * 2 + s) * 12;
@@ -383,7 +517,7 @@ export class GameEngine {
     }
 
     // Distant misty Mississippi riverbanks (willow tree mounds)
-    this.ctx.fillStyle = '#1e1b18';
+    this.ctx.fillStyle = '#18202a';
     for (let i = -1; i < 12; i++) {
       const mx = (i * 160) - (this.cameraX * 0.2) % 160;
       this.ctx.beginPath();
@@ -392,47 +526,12 @@ export class GameEngine {
       this.ctx.closePath();
       this.ctx.fill();
     }
+    this.ctx.fillStyle = 'rgba(180, 203, 198, 0.08)';
+    this.ctx.fillRect(0, 11 * TILE_SIZE, this.canvas.width, 28);
 
-    // Steamboat Giant Paddlewheel (spinning on the left of the ship!)
-    const wheelX = 60 - (this.cameraX * 0.05);
-    const wheelY = 12 * TILE_SIZE + 10;
-    const wheelRadius = 55;
-    const wheelAngle = time * 3;
-
-    this.ctx.save();
-    this.ctx.translate(wheelX, wheelY);
-    this.ctx.rotate(wheelAngle);
-
-    // Outer wheel ring (Crimson riverboat steel)
-    this.ctx.strokeStyle = '#dc2626';
-    this.ctx.lineWidth = 4;
-    this.ctx.beginPath();
-    this.ctx.arc(0, 0, wheelRadius, 0, Math.PI * 2);
-    this.ctx.stroke();
-
-    // Wheel spokes and timber paddle blades
-    for (let a = 0; a < 8; a++) {
-      const spokeAngle = (a * Math.PI) / 4;
-      this.ctx.strokeStyle = '#f59e0b';
-      this.ctx.lineWidth = 3;
-      this.ctx.beginPath();
-      this.ctx.moveTo(0, 0);
-      this.ctx.lineTo(Math.cos(spokeAngle) * wheelRadius, Math.sin(spokeAngle) * wheelRadius);
-      this.ctx.stroke();
-
-      // Red paddle blade on tip
-      this.ctx.fillStyle = '#ef4444';
-      const bx = Math.cos(spokeAngle) * (wheelRadius - 6);
-      const by = Math.sin(spokeAngle) * (wheelRadius - 6);
-      this.ctx.fillRect(bx - 4, by - 4, 8, 8);
-    }
-
-    // Brass hub center
-    this.ctx.fillStyle = '#fbbf24';
-    this.ctx.beginPath();
-    this.ctx.arc(0, 0, 10, 0, Math.PI * 2);
-    this.ctx.fill();
-    this.ctx.restore();
+    // The riverboat identity is carried by the deck, funnels, bell and
+    // pennant. Avoid a giant foreground paddlewheel that clips at camera
+    // boundaries and reads like an unexplained obstacle.
   }
 
   private renderGhostPath() {
@@ -463,7 +562,7 @@ export class GameEngine {
     // "SOLVABLE ROUTE" badge
     this.ctx.fillStyle = '#22c55e';
     this.ctx.font = 'bold 12px monospace';
-    this.ctx.fillText('✓ SPEEDRUNNER FAIRNESS VERIFIED', startX + 30, startY - 20);
+    this.ctx.fillText('~ ESTIMATED CLEARANCE PATH', startX + 30, startY - 20);
     this.ctx.restore();
   }
 }

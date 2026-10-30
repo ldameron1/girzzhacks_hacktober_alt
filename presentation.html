@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GemmaKaizo — Demo</title>
+  <style>
+    :root { --bg:#080b12; --panel:#111827; --line:#263244; --text:#f8fafc; --muted:#a8b3c2; --accent:#a855f7; --green:#4ade80; }
+    * { box-sizing:border-box; } body { margin:0; background:radial-gradient(circle at 75% 15%,#231044,var(--bg) 45%); color:var(--text); font:16px system-ui,sans-serif; }
+    header { height:58px; display:flex; align-items:center; justify-content:space-between; padding:0 28px; border-bottom:1px solid var(--line); }
+    header strong { letter-spacing:2px; } header span { color:var(--muted); font-size:13px; }
+    main { height:calc(100vh - 58px); position:relative; } section { position:absolute; inset:0; padding:8vh 10vw; opacity:0; pointer-events:none; transform:translateY(12px); transition:.2s ease; } section.active { opacity:1; pointer-events:auto; transform:none; }
+    h1 { font-size:clamp(42px,7vw,92px); line-height:1; margin:0 0 22px; } h2 { font-size:clamp(30px,4vw,56px); margin:0 0 24px; } p { max-width:820px; color:var(--muted); font-size:clamp(18px,2vw,28px); line-height:1.45; }
+    .eyebrow { color:var(--accent); text-transform:uppercase; letter-spacing:3px; font-size:13px; font-weight:700; margin-bottom:18px; }
+    .grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; max-width:1100px; } .card { background:#0f172acc; border:1px solid var(--line); border-radius:10px; padding:22px; } .card b { color:#e9d5ff; } .card p { font-size:16px; margin:10px 0 0; }
+    .flow { display:flex; gap:12px; align-items:center; flex-wrap:wrap; max-width:1000px; } .step { padding:18px; border:1px solid var(--line); border-radius:8px; background:var(--panel); } .arrow { color:var(--accent); font-size:28px; }
+    iframe { width:100%; height:72vh; border:1px solid var(--line); border-radius:10px; background:#000; } .controls { position:fixed; right:28px; bottom:22px; display:flex; gap:8px; } button { background:var(--panel); border:1px solid var(--line); color:var(--text); padding:9px 14px; border-radius:6px; cursor:pointer; } button:hover { border-color:var(--accent); }
+    @media (max-width:800px) { .grid { grid-template-columns:1fr; } section { padding:7vh 6vw; } .flow { display:block; } .step { margin:8px 0; } .arrow { display:none; } }
+  </style>
+</head>
+<body>
+  <header><strong>GEMMAKAIZO</strong><span>Adaptive rage platformer · live demo</span></header>
+  <main>
+    <section class="active"><div class="eyebrow">The project</div><h1>Gemma learns how you fail.</h1><p>A replayable precision platformer where behavioral telemetry drives targeted, guarded level mutations. The game remains playable when a model provider is unavailable.</p><div class="grid"><div class="card"><b>Goal</b><p>Make difficulty adaptation visible, inspectable, and fun to replay.</p></div><div class="card"><b>World</b><p>Original procedural riverboat-night visuals with a Halloween atmosphere.</p></div><div class="card"><b>Proof</b><p>The game shows the request, response, provider, latency, and accepted/rejected mutations.</p></div></div></section>
+    <section><div class="eyebrow">How it works</div><h2>One death creates an inspectable decision.</h2><div class="flow"><div class="step">1 · Player run</div><div class="arrow">→</div><div class="step">2 · Telemetry payload</div><div class="arrow">→</div><div class="step">3 · Gemma / fallback</div><div class="arrow">→</div><div class="step">4 · Guarded mutation</div></div><div class="grid"><div class="card"><b>Telemetry</b><p>Speed, sprinting, jumps, hesitation, deaths, and position are collected during the run.</p></div><div class="card"><b>Model boundary</b><p>The server checks coordinates, supported types, and placement conditions before applying anything.</p></div><div class="card"><b>Honest status</b><p>The monitor distinguishes Google Gemma, Gemini, OpenRouter, heuristic fallback, and failed backend requests.</p></div></div></section>
+    <section><div class="eyebrow">Presenter runbook</div><h2>Show the loop in 60 seconds.</h2><div class="grid"><div class="card"><b>1 · Start</b><p>Press Start, move into a hazard, and let one death complete.</p></div><div class="card"><b>2 · Point</b><p>Point to API Exchange: → POST /api/mutate, then ← RESPONSE. The console shows model, latency, archetype, diagnosis, and accepted/rejected counts.</p></div><div class="card"><b>3 · Replay</b><p>Show the new hazard, then use Reset Stage to return to the baseline. Use B for the local reflex pilot, H for heatmap, and G for the clearance estimate.</p></div></div><p>Only call it Gemma-driven when the visible response identifies a Google Gemma model. Otherwise explain the displayed fallback path.</p></section>
+    <section><div class="eyebrow">Live demo</div><iframe src="/"></iframe><p style="font-size:15px;margin-top:10px">Production runbook: <code>npm run build</code>, then <code>npm run hackathon-boot</code>, then visit <code>http://127.0.0.1:3001</code>. After source edits, use <code>npm run hackathon-refresh</code> and refresh the browser; it does not restart the server. For source/HMR work, use <code>npm run dev</code>. The final slide is a presenter sidecar, not a separate feature claim.</p></section>
+  </main>
+  <div class="controls"><button id="prev">←</button><span id="counter" style="padding:9px;color:var(--muted)">1 / 4</span><button id="next">→</button></div>
+  <script>
+    const slides=[...document.querySelectorAll('section')]; let current=0;
+    function show(n){current=Math.max(0,Math.min(slides.length-1,n));slides.forEach((s,i)=>s.classList.toggle('active',i===current));document.querySelector('#counter').textContent=`${current+1} / ${slides.length}`;}
+    document.querySelector('#prev').onclick=()=>show(current-1); document.querySelector('#next').onclick=()=>show(current+1);
+    addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key===' ')show(current+1);if(e.key==='ArrowLeft')show(current-1);});
+  </script>
+</body>
+</html>

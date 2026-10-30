@@ -51,7 +51,7 @@ export class Player implements Box {
   private deathVy: number = -400;
   private animTimer: number = 0;
 
-  // Steamboat Willie whistle animation
+  // Steam-lantern idle animation
   private whistleTimer: number = 0;
 
   constructor(startX: number, startY: number) {
@@ -246,7 +246,7 @@ export class Player implements Box {
         }
 
         // Flagpole victory
-        if (tile === TileType.FLAGPOLE) {
+        if (tile === TileType.FLAGPOLE && ty <= 3) {
           if (!this.hasWon) {
             this.hasWon = true;
             this.consecutiveDeaths = 0; // Victory resets streak
@@ -320,23 +320,21 @@ export class Player implements Box {
       ctx.save();
       ctx.translate(px + this.width / 2, py + this.height / 2);
       ctx.rotate(this.animTimer * 12);
-      this.drawSteamboatWillie(ctx, -this.width / 2, -this.height / 2, true);
+      this.drawDeckhand(ctx, -this.width / 2, -this.height / 2, true);
       ctx.restore();
       return;
     }
 
-    this.drawSteamboatWillie(ctx, px, py, false);
+    this.drawDeckhand(ctx, px, py, false);
   }
 
   /**
-   * Steamboat Willie (1928) inspired character sprite.
-   * Public domain since January 1, 2024.
-   * Classic black-and-white rubber hose style.
+   * Original moonlit deckhand sprite: a compact brass-and-navy silhouette
+   * designed for this steamboat setting without imitating a known character.
    */
-  private drawSteamboatWillie(ctx: CanvasRenderingContext2D, px: number, py: number, shocked: boolean) {
+  private drawDeckhand(ctx: CanvasRenderingContext2D, px: number, py: number, shocked: boolean) {
     ctx.save();
 
-    // Flip if facing left
     if (this.facing === 'left' && !shocked) {
       ctx.translate(px + this.width, py);
       ctx.scale(-1, 1);
@@ -344,131 +342,62 @@ export class Player implements Box {
       py = 0;
     }
 
-    // ---- STEAMBOAT WILLIE CLASSIC MONOCHROME ----
+    // Brass cap and shadowed faceplate.
+    ctx.fillStyle = '#172b35';
+    ctx.fillRect(px + 4, py + 3, 14, 10);
+    ctx.fillStyle = '#d5a85d';
+    ctx.fillRect(px + 3, py, 16, 4);
+    ctx.fillStyle = shocked ? '#ef4444' : '#8ed0c1';
+    ctx.fillRect(px + 8, py + 7, 8, 3);
 
-    // Ears (two round circles on top of head — the iconic silhouette)
-    ctx.fillStyle = '#1a1a1a';
-    ctx.beginPath();
-    ctx.arc(px + 5, py + 3, 5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(px + 17, py + 3, 5, 0, Math.PI * 2);
-    ctx.fill();
+    // Navy work coat with brass fasteners.
+    ctx.fillStyle = '#203b48';
+    ctx.fillRect(px + 4, py + 13, 14, 12);
+    ctx.fillStyle = '#d5a85d';
+    ctx.fillRect(px + 10, py + 15, 2, 2);
+    ctx.fillRect(px + 10, py + 20, 2, 2);
 
-    // Head (oval)
-    ctx.fillStyle = '#1a1a1a';
-    ctx.beginPath();
-    ctx.ellipse(px + 11, py + 9, 8, 7, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Face / snout area (lighter oval)
-    ctx.fillStyle = '#f5f0e8';
-    ctx.beginPath();
-    ctx.ellipse(px + 13, py + 11, 5, 4, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Eye (classic pie-eye: white ellipse with black dot)
-    ctx.fillStyle = '#f5f0e8';
-    ctx.beginPath();
-    ctx.ellipse(px + 11, py + 8, 3, 3.5, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Pupil
-    ctx.fillStyle = shocked ? '#ef4444' : '#000000';
-    const pupilX = this.facing === 'right' || shocked ? 12 : 10;
-    ctx.beginPath();
-    ctx.arc(px + pupilX, py + 8, 1.5, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Nose (small black oval)
-    ctx.fillStyle = '#1a1a1a';
-    ctx.beginPath();
-    ctx.ellipse(px + 16, py + 10, 2, 1.5, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Mouth / grin
-    ctx.strokeStyle = '#1a1a1a';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(px + 14, py + 12, 3, 0.1, Math.PI - 0.1, false);
-    ctx.stroke();
-
-    // Steamboat captain hat (the classic small pillbox)
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(px + 4, py - 2, 14, 4);
-    ctx.fillStyle = '#3a3a3a';
-    ctx.fillRect(px + 6, py - 5, 10, 4);
-
-    // Body (black with white buttons — classic 1928 shorts)
-    ctx.fillStyle = '#1a1a1a';
-    ctx.fillRect(px + 5, py + 15, 12, 8);
-
-    // Shorts / lower body
-    ctx.fillStyle = '#2a2a2a';
-    ctx.fillRect(px + 4, py + 21, 14, 5);
-
-    // White buttons on shorts (iconic)
-    ctx.fillStyle = '#f5f0e8';
-    ctx.beginPath();
-    ctx.arc(px + 8, py + 23, 1.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(px + 14, py + 23, 1.5, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Arms (rubber hose noodle arms)
-    ctx.strokeStyle = '#1a1a1a';
+    // Flexible tool arms.
+    ctx.strokeStyle = '#172b35';
     ctx.lineWidth = 3;
     const armWave = Math.sin(this.animTimer * 8) * 4;
-    // Back arm
     ctx.beginPath();
     ctx.moveTo(px + 5, py + 17);
     ctx.quadraticCurveTo(px - 2, py + 20 + armWave, px, py + 26);
     ctx.stroke();
-    // Front arm
     ctx.beginPath();
     ctx.moveTo(px + 17, py + 17);
     ctx.quadraticCurveTo(px + 24, py + 20 - armWave, px + 22, py + 26);
     ctx.stroke();
+    ctx.fillStyle = '#d5a85d';
+    ctx.fillRect(px - 2, py + 25, 4, 3);
+    ctx.fillRect(px + 20, py + 25, 4, 3);
 
-    // Gloves (white circles on hands)
-    ctx.fillStyle = '#f5f0e8';
-    ctx.beginPath();
-    ctx.arc(px, py + 26, 3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(px + 22, py + 26, 3, 0, Math.PI * 2);
-    ctx.fill();
-
-    // Legs (rubber hose style)
+    // Boots and compact stance.
     const walkBob = (this.onGround && Math.abs(this.vx) > 20) ? Math.sin(this.animTimer * 16) * 3 : 0;
-    ctx.strokeStyle = '#1a1a1a';
+    ctx.strokeStyle = '#172b35';
     ctx.lineWidth = 3;
-    // Left leg
     ctx.beginPath();
     ctx.moveTo(px + 7, py + 26);
     ctx.lineTo(px + 5, py + 29 + walkBob);
     ctx.stroke();
-    // Right leg
     ctx.beginPath();
     ctx.moveTo(px + 15, py + 26);
     ctx.lineTo(px + 17, py + 29 - walkBob);
     ctx.stroke();
-
-    // Shoes (big round classic shoes)
-    ctx.fillStyle = '#1a1a1a';
+    ctx.fillStyle = '#111c23';
     ctx.beginPath();
-    ctx.ellipse(px + 4, py + 29 + walkBob, 5, 2.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(px + 4, py + 29 + walkBob, 4, 2, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.beginPath();
-    ctx.ellipse(px + 18, py + 29 - walkBob, 5, 2.5, 0, 0, Math.PI * 2);
+    ctx.ellipse(px + 18, py + 29 - walkBob, 4, 2, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Whistle steam puff when idle (Steamboat Willie iconic animation)
+    // Steam-lantern puff when idle.
     if (this.onGround && Math.abs(this.vx) < 10 && !shocked) {
       const puffPhase = Math.sin(this.whistleTimer * 3);
       if (puffPhase > 0.5) {
-        ctx.fillStyle = 'rgba(200, 200, 200, 0.5)';
+        ctx.fillStyle = 'rgba(200, 220, 214, 0.5)';
         ctx.beginPath();
         ctx.arc(px + 20, py + 6 - puffPhase * 4, 2 + puffPhase * 2, 0, Math.PI * 2);
         ctx.fill();

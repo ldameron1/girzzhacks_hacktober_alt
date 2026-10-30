@@ -65,8 +65,12 @@ export class LevelPatcher {
           break;
 
         case 'CRUMBLING_FLOOR':
-          // Replace a solid floor block with crumbling tile
-          if (newTiles[ty][tx] === 1) {
+          // Only mutate the exposed top surface of a platform. Replacing a
+          // wall face creates a visually floating gray tile and is not a
+          // meaningful floor adaptation.
+          if (newTiles[ty][tx] === 1 &&
+              ty > 0 && newTiles[ty - 1][tx] === 0 &&
+              ty + 1 < level.height && newTiles[ty + 1][tx] === 1) {
             newTiles[ty][tx] = 4; // 4 = Crumbling block
             valid = true;
           }
@@ -91,7 +95,9 @@ export class LevelPatcher {
 
         case 'BOUNCE_TRAP':
           // Replace floor block with high-velocity trampoline that launches player into hazards
-          if (newTiles[ty][tx] === 1 || newTiles[ty][tx] === 0) {
+          if (newTiles[ty][tx] === 1 &&
+              ty > 0 && newTiles[ty - 1][tx] === 0 &&
+              ty + 1 < level.height && newTiles[ty + 1][tx] === 1) {
             newTiles[ty][tx] = 5; // 5 = Spring
             valid = true;
           }

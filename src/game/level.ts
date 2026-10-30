@@ -26,7 +26,7 @@ export class Level {
   public coins: Array<{ x: number; y: number; collected: boolean }>;
   public initialEnemies: Array<{ type: string; x: number; y: number }>;
   public checkpointX: number = 3 * TILE_SIZE;
-  public checkpointY: number = 10 * TILE_SIZE;
+  public checkpointY: number = 12 * TILE_SIZE - 30;
   public waterAnimTimer: number = 0;
 
   constructor() {
@@ -77,8 +77,10 @@ export class Level {
 
     // Section 3: Midpoint Ship's Bell Checkpoint
     this.tiles[11][34] = TileType.CHECKPOINT;
-    this.checkpointX = 34 * TILE_SIZE;
-    this.checkpointY = 10 * TILE_SIZE;
+    // The bell becomes active only after the player reaches it.
+    // Keep fresh runs anchored at the actual spawn instead of the midpoint.
+    this.checkpointX = 3 * TILE_SIZE;
+    this.checkpointY = 12 * TILE_SIZE - 30;
 
     // Section 4: Rotting driftwood suspension bridge over second river pit
     for (let x = 45; x <= 48; x++) {
@@ -118,7 +120,9 @@ export class Level {
     // Pete's Deckhand Enforcers (patrolling enemies)
     this.initialEnemies.push({ type: 'gloomba', x: 14 * TILE_SIZE, y: 11 * TILE_SIZE });
     this.initialEnemies.push({ type: 'gloomba', x: 26 * TILE_SIZE, y: 11 * TILE_SIZE });
-    this.initialEnemies.push({ type: 'gloomba', x: 36 * TILE_SIZE, y: 11 * TILE_SIZE });
+    // Keep the checkpoint approach clear so a death does not create an
+    // immediate respawn loop with the next patrol.
+    this.initialEnemies.push({ type: 'gloomba', x: 40 * TILE_SIZE, y: 11 * TILE_SIZE });
     this.initialEnemies.push({ type: 'gloomba', x: 61 * TILE_SIZE, y: 11 * TILE_SIZE });
   }
 
@@ -185,6 +189,9 @@ export class Level {
     const startTileX = Math.max(0, Math.floor(cameraX / TILE_SIZE));
     const endTileX = Math.min(this.width, Math.ceil((cameraX + viewportWidth) / TILE_SIZE));
 
+    // Water is painted first so the solid hull remains visible outside pits.
+    this.renderRiverWater(ctx, cameraX, viewportWidth, viewportHeight);
+
     // Render Tiles
     for (let y = 0; y < this.height; y++) {
       for (let x = startTileX; x < endTileX; x++) {
@@ -230,10 +237,7 @@ export class Level {
       }
     }
 
-    // Render Churning Mississippi River Water in Pits (Rows 13-14)
-    this.renderRiverWater(ctx, cameraX, viewportWidth);
-
-    // Render Golden Musical Notes / Steamboat Tokens
+    // Render brass route tokens
     this.coins.forEach(c => {
       if (!c.collected) {
         const cx = c.x * TILE_SIZE + 16 - cameraX;
@@ -252,37 +256,47 @@ export class Level {
    * y=14: Keel foundation timbers
    */
   private renderSteamboatDeck(ctx: CanvasRenderingContext2D, px: number, py: number, tileY: number) {
-    if (tileY === 12) {
+    if (tileY < 12) {
+      // Elevated structures use the same painted steel and brass language as
+      // the riverboat superstructure, rather than looking like floating dirt.
+      ctx.fillStyle = '#29434a';
+      ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+      ctx.fillStyle = '#355b5b';
+      ctx.fillRect(px + 2, py + 2, TILE_SIZE - 4, 5);
+      ctx.fillStyle = '#162b35';
+      ctx.fillRect(px, py + 28, TILE_SIZE, 4);
+      ctx.fillStyle = '#b98a4b';
+      ctx.fillRect(px, py, TILE_SIZE, 2);
+      ctx.fillRect(px + 5, py + 11, 3, 3);
+      ctx.fillRect(px + 23, py + 11, 3, 3);
+    } else if (tileY === 12) {
       // Top Deck Plank (Polished Warm Oak with brass rivets)
-      ctx.fillStyle = '#c89558';
+      ctx.fillStyle = '#9b6a3f';
       ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
 
-      // Plank grooves (wood decking strips)
-      ctx.fillStyle = '#e2b378';
-      ctx.fillRect(px, py + 2, TILE_SIZE, 6);
-      ctx.fillRect(px, py + 12, TILE_SIZE, 6);
-      ctx.fillRect(px, py + 22, TILE_SIZE, 6);
+      // One broad deck plank with a restrained highlight; avoids a noisy
+      // repeated checkerboard when the level is viewed at small scale.
+      ctx.fillStyle = '#c18a51';
+      ctx.fillRect(px + 1, py + 3, TILE_SIZE - 2, 5);
+      ctx.fillStyle = '#b27a48';
+      ctx.fillRect(px + 1, py + 17, TILE_SIZE - 2, 3);
 
       // Dark seam lines between deck boards
-      ctx.fillStyle = '#5c3818';
+      ctx.fillStyle = '#4b3021';
       ctx.fillRect(px, py, TILE_SIZE, 2);
-      ctx.fillRect(px, py + 10, TILE_SIZE, 2);
-      ctx.fillRect(px, py + 20, TILE_SIZE, 2);
       ctx.fillRect(px, py + 30, TILE_SIZE, 2);
 
       // Brass deck nail rivets
-      ctx.fillStyle = '#fbbf24';
+      ctx.fillStyle = '#d5a85d';
       ctx.beginPath();
-      ctx.arc(px + 6, py + 6, 2, 0, Math.PI * 2);
-      ctx.arc(px + 26, py + 6, 2, 0, Math.PI * 2);
-      ctx.arc(px + 16, py + 16, 2, 0, Math.PI * 2);
-      ctx.arc(px + 6, py + 26, 2, 0, Math.PI * 2);
-      ctx.arc(px + 26, py + 26, 2, 0, Math.PI * 2);
+      ctx.arc(px + 6, py + 6, 1.5, 0, Math.PI * 2);
+      ctx.arc(px + 26, py + 6, 1.5, 0, Math.PI * 2);
+      ctx.arc(px + 16, py + 25, 1.5, 0, Math.PI * 2);
       ctx.fill();
 
       // Top brass trim railing edge
-      ctx.fillStyle = '#d97706';
-      ctx.fillRect(px, py, TILE_SIZE, 2);
+      ctx.fillStyle = '#d19a4d';
+      ctx.fillRect(px, py, TILE_SIZE, 1);
     } else if (tileY === 13) {
       // Mid Hull Planking (Darker Steamboat Cedar)
       ctx.fillStyle = '#8b5a2b';
@@ -328,50 +342,47 @@ export class Level {
     ctx.fillRect(px + 2, py + 24, 6, 6);
     ctx.fillRect(px + 24, py + 24, 6, 6);
 
-    // Glowing question mark / gear
-    ctx.fillStyle = '#fef3c7';
-    ctx.font = 'bold 18px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('?', px + 16, py + 23);
+    // Original anchor stencil: readable as cargo, not a platformer question box.
+    ctx.strokeStyle = '#fff1b8';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(px + 16, py + 15, 5, 0, Math.PI * 2);
+    ctx.moveTo(px + 16, py + 20);
+    ctx.lineTo(px + 16, py + 25);
+    ctx.moveTo(px + 11, py + 24);
+    ctx.lineTo(px + 16, py + 27);
+    ctx.lineTo(px + 21, py + 24);
+    ctx.stroke();
+    ctx.fillStyle = '#fff1b8';
+    ctx.fillRect(px + 15, py + 8, 2, 8);
+
+    // A small pumpkin-orange lantern cue keeps the October theme visible
+    // without changing the crate's gameplay meaning.
+    ctx.fillStyle = 'rgba(255, 190, 70, 0.45)';
+    ctx.beginPath();
+    ctx.arc(px + 16, py + 10, 5, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   /**
    * Rusty Iron Anchor Spike Hazard
    */
   private renderAnchorSpike(ctx: CanvasRenderingContext2D, px: number, py: number) {
-    // Anchor shaft
-    ctx.fillStyle = '#475569';
-    ctx.fillRect(px + 14, py + 6, 4, 20);
-
-    // Fluke curve
-    ctx.strokeStyle = '#334155';
-    ctx.lineWidth = 3;
+    // Low-profile deck hazard: a consistent red signal marker rather than
+    // repeated bright triangles that read as placeholder geometry.
+    ctx.fillStyle = '#263746';
+    ctx.fillRect(px + 4, py + 25, 24, 4);
+    ctx.fillStyle = '#c4573c';
     ctx.beginPath();
-    ctx.arc(px + 16, py + 20, 10, 0.2, Math.PI - 0.2, false);
-    ctx.stroke();
-
-    // Sharp anchor tips
-    ctx.fillStyle = '#ef4444';
-    ctx.beginPath();
-    ctx.moveTo(px + 6, py + 14);
-    ctx.lineTo(px + 3, py + 6);
-    ctx.lineTo(px + 9, py + 12);
+    ctx.moveTo(px + 6, py + 25);
+    ctx.lineTo(px + 10, py + 8);
+    ctx.lineTo(px + 16, py + 18);
+    ctx.lineTo(px + 22, py + 8);
+    ctx.lineTo(px + 26, py + 25);
     ctx.closePath();
     ctx.fill();
-
-    ctx.beginPath();
-    ctx.moveTo(px + 26, py + 14);
-    ctx.lineTo(px + 29, py + 6);
-    ctx.lineTo(px + 23, py + 12);
-    ctx.closePath();
-    ctx.fill();
-
-    // Ring on top
-    ctx.strokeStyle = '#dc2626';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(px + 16, py + 4, 3, 0, Math.PI * 2);
-    ctx.stroke();
+    ctx.fillStyle = '#f6d88c';
+    ctx.fillRect(px + 8, py + 20, 16, 3);
   }
 
   /**
@@ -384,22 +395,27 @@ export class Level {
     const shakeX = isShaking ? (Math.random() - 0.5) * 5 : 0;
     const shakeY = isShaking ? (Math.random() - 0.5) * 3 : 0;
 
-    // Waterlogged grey-green driftwood
-    ctx.fillStyle = isShaking ? '#71717a' : '#52525b';
+    // Waterlogged deck plank, kept in the same brown/teal material language
+    // as the surrounding boat instead of an unexplained gray box.
+    ctx.fillStyle = isShaking ? '#a9794a' : '#765238';
     ctx.fillRect(px + shakeX, py + shakeY, TILE_SIZE, TILE_SIZE);
 
-    // Rot cracks
-    ctx.strokeStyle = '#18181b';
-    ctx.lineWidth = 2;
+    ctx.fillStyle = '#c79a5b';
+    ctx.fillRect(px + shakeX + 2, py + shakeY + 3, TILE_SIZE - 4, 4);
+    ctx.strokeStyle = '#3b2a25';
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(px + shakeX + 3, py + shakeY + 5);
     ctx.lineTo(px + shakeX + 15, py + shakeY + 18);
     ctx.lineTo(px + shakeX + 29, py + shakeY + 9);
     ctx.stroke();
+    ctx.fillStyle = '#d5a85d';
+    ctx.fillRect(px + shakeX + 5, py + shakeY + 24, 4, 3);
+    ctx.fillRect(px + shakeX + 23, py + shakeY + 24, 4, 3);
 
     if (isShaking) {
       // Danger exclamation
-      ctx.fillStyle = '#ef4444';
+      ctx.fillStyle = '#f6d88c';
       ctx.font = 'bold 12px monospace';
       ctx.textAlign = 'center';
       ctx.fillText('SPLIT!', px + 16, py - 4);
@@ -482,35 +498,28 @@ export class Level {
    * Steamboat Smoke Funnel Mast with Riverboat Flag (Goal)
    */
   private renderSteamMast(ctx: CanvasRenderingContext2D, px: number, py: number) {
-    // Black steel steam funnel mast
-    ctx.fillStyle = '#1c1917';
-    ctx.fillRect(px + 12, py, 8, TILE_SIZE);
+    // One continuous iron mast. The old per-tile finials made this render as
+    // a stack of disconnected poles and flags.
+    ctx.fillStyle = '#263746';
+    ctx.fillRect(px + 14, py, 4, TILE_SIZE);
+    ctx.fillStyle = '#a98552';
+    ctx.fillRect(px + 12, py + 1, 8, 2);
 
-    // Brass flanged rings on funnel
-    ctx.fillStyle = '#f59e0b';
-    ctx.fillRect(px + 10, py + 4, 12, 3);
-    ctx.fillRect(px + 10, py + 20, 12, 3);
-
-    // Top mast with waving Riverboat Pennant
-    if (py % 120 < 32) {
-      // Golden pilot wheel finial on top
-      ctx.fillStyle = '#eab308';
+    // Only the top tile owns the pennant and finial.
+    if (py === 3 * TILE_SIZE) {
+      ctx.fillStyle = '#c99b52';
       ctx.beginPath();
-      ctx.arc(px + 16, py - 4, 8, 0, Math.PI * 2);
+      ctx.arc(px + 16, py - 2, 4, 0, Math.PI * 2);
       ctx.fill();
-
-      // Waving Red & White Steamboat Pennant
-      ctx.fillStyle = '#ef4444';
+      ctx.fillStyle = '#d8b06a';
       ctx.beginPath();
-      ctx.moveTo(px + 16, py);
-      ctx.lineTo(px + 44, py + 8);
-      ctx.lineTo(px + 16, py + 16);
+      ctx.moveTo(px + 18, py + 3);
+      ctx.lineTo(px + 43, py + 10);
+      ctx.lineTo(px + 18, py + 17);
       ctx.closePath();
       ctx.fill();
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 9px monospace';
-      ctx.fillText('1928', px + 20, py + 11);
+      ctx.fillStyle = '#314f58';
+      ctx.fillRect(px + 20, py + 8, 15, 3);
     }
   }
 
@@ -544,54 +553,58 @@ export class Level {
   /**
    * Churning Mississippi River Water in Pits
    */
-  private renderRiverWater(ctx: CanvasRenderingContext2D, cameraX: number, viewportWidth: number) {
-    const waveOffset = Math.sin(this.waterAnimTimer * 4) * 4;
+  private renderRiverWater(
+    ctx: CanvasRenderingContext2D,
+    cameraX: number,
+    viewportWidth: number,
+    viewportHeight: number
+  ) {
     const waterY = 12 * TILE_SIZE + 8;
+    const pits = [[22, 24], [45, 48], [71, 74]];
 
     ctx.save();
-    // Deep Mississippi Teal / Blue
-    ctx.fillStyle = '#0284c7';
-    ctx.fillRect(0, waterY, viewportWidth, viewportHeight - waterY);
-
-    // Foam Wave Crests
-    ctx.strokeStyle = '#e0f2fe';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    for (let x = 0; x < viewportWidth; x += 16) {
-      const wx = x;
-      const wy = waterY + Math.sin((x + cameraX) * 0.1 + this.waterAnimTimer * 5) * 3;
-      if (x === 0) ctx.moveTo(wx, wy);
-      else ctx.lineTo(wx, wy);
+    for (const [startTile, endTile] of pits) {
+      const startX = startTile * TILE_SIZE - cameraX;
+      const width = (endTile - startTile + 1) * TILE_SIZE;
+      if (startX > viewportWidth || startX + width < 0) continue;
+      ctx.fillStyle = '#0284c7';
+      ctx.fillRect(startX, waterY, width, viewportHeight - waterY);
+      ctx.strokeStyle = '#e0f2fe';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      const firstX = Math.max(0, startX - 16);
+      const lastX = Math.min(viewportWidth, startX + width + 16);
+      for (let x = firstX; x <= lastX; x += 16) {
+        const wy = waterY + Math.sin((x + cameraX) * 0.1 + this.waterAnimTimer * 5) * 3;
+        if (x === firstX) ctx.moveTo(x, wy);
+        else ctx.lineTo(x, wy);
+      }
+      ctx.stroke();
     }
-    ctx.stroke();
     ctx.restore();
   }
 
   /**
-   * Golden Musical Note / Brass Riverboat Coin
+   * Brass riverboat route token
    */
   private renderMusicNoteCoin(ctx: CanvasRenderingContext2D, cx: number, cy: number) {
     ctx.save();
-    // Golden Glow
-    ctx.fillStyle = '#f59e0b';
+    ctx.fillStyle = 'rgba(255, 190, 70, 0.22)';
     ctx.beginPath();
-    ctx.arc(cx - 3, cy + 4, 5, 0, Math.PI * 2);
+    ctx.arc(cx, cy, 12, 0, Math.PI * 2);
     ctx.fill();
-
-    // Stem & Flag
-    ctx.strokeStyle = '#fbbf24';
-    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = '#f6d88c';
+    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(cx + 1, cy + 4);
-    ctx.lineTo(cx + 1, cy - 8);
-    ctx.quadraticCurveTo(cx + 6, cy - 7, cx + 8, cy - 3);
+    ctx.arc(cx, cy, 7, 0, Math.PI * 2);
     ctx.stroke();
-
-    // Sparkle
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath();
-    ctx.arc(cx - 4, cy + 2, 1.5, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(cx - 4, cy - 5, 8, 10);
+    ctx.fillStyle = '#fff1b8';
+    ctx.fillRect(cx - 2, cy - 3, 4, 6);
+    ctx.fillStyle = '#6b3f1e';
+    ctx.fillRect(cx - 5, cy - 9, 10, 2);
+    ctx.fillRect(cx - 5, cy + 7, 10, 2);
     ctx.restore();
   }
 }

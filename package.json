@@ -7,9 +7,11 @@
     "dev": "tsx server/server.ts",
     "client": "vite",
     "server": "tsx server/server.ts",
-    "build": "vite build",
+    "hackathon-boot": "bash scripts/hackathon-boot.sh",
+    "hackathon-refresh": "bash scripts/hackathon-refresh.sh",
+    "build": "vite build && cp presentation.html dist/presentation.html",
     "preview": "vite preview",
-    "test": "node --test tests/physics.test.mjs"
+    "test": "tsx --test tests/physics.test.mjs"
   },
   "repository": {
     "type": "git",

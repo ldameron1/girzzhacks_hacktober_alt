@@ -9,6 +9,7 @@ export interface DeathRecord {
 }
 
 export class TelemetryRecorder {
+  private static readonly MAX_DEATH_HISTORY = 100;
   public totalRuns: number = 0;
   public totalDeaths: number = 0;
   public furthestX: number = 0;
@@ -30,6 +31,23 @@ export class TelemetryRecorder {
   startNewRun(spawnX: number) {
     this.totalRuns++;
     this.furthestX = Math.max(this.furthestX, spawnX);
+  }
+
+  reset() {
+    this.totalRuns = 0;
+    this.totalDeaths = 0;
+    this.furthestX = 0;
+    this.coinsCollected = 0;
+    this.speedsSampled = [];
+    this.sprintTicks = 0;
+    this.totalTicks = 0;
+    this.hesitationSeconds = 0;
+    this.jumpsHeldDurations = [];
+    this.edgeDistancesSampled = [];
+    this.directionChanges = 0;
+    this.lastFacing = 'right';
+    this.deathHistory = [];
+    this.currentDifficulty = 3;
   }
 
   recordTick(dt: number, player: Player, level: Level, sprintHeld: boolean) {
@@ -86,6 +104,9 @@ export class TelemetryRecorder {
       cause,
       timestamp: Date.now()
     });
+    if (this.deathHistory.length > TelemetryRecorder.MAX_DEATH_HISTORY) {
+      this.deathHistory.shift();
+    }
   }
 
   getAverages() {

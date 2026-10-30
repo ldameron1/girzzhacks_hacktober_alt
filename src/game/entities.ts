@@ -80,17 +80,22 @@ export class Gloomba extends Entity {
       return;
     }
 
-    // Horizontal movement
-    this.x += this.vx * dt;
-
-    // Wall collision & reversal
-    const checkX = this.facing < 0 ? this.x : this.x + this.width;
-    const tileX = Math.floor(checkX / TILE_SIZE);
+    const nextX = this.x + this.vx * dt;
+    const edgeX = this.facing < 0 ? nextX : nextX + this.width;
+    const tileX = Math.floor(edgeX / TILE_SIZE);
     const tileY = Math.floor((this.y + this.height - 4) / TILE_SIZE);
+    const floorX = Math.floor((nextX + this.width / 2) / TILE_SIZE);
+    const floorY = Math.floor((this.y + this.height + 2) / TILE_SIZE);
+    const nextFloor = level.getTile(floorX, floorY);
+    const walkableFloor = nextFloor === TileType.SOLID ||
+      nextFloor === TileType.CRUMBLING || nextFloor === TileType.CHECKPOINT;
 
-    if (level.getTile(tileX, tileY) === TileType.SOLID) {
+    // Turn around at walls and pit edges instead of falling forever.
+    if (level.getTile(tileX, tileY) === TileType.SOLID || !walkableFloor) {
       this.facing *= -1;
       this.vx = this.facing * this.speed;
+    } else {
+      this.x = nextX;
     }
 
     // Apply gravity
@@ -100,7 +105,8 @@ export class Gloomba extends Entity {
     // Floor collision
     const floorTileY = Math.floor((this.y + this.height) / TILE_SIZE);
     const curTileX = Math.floor((this.x + this.width / 2) / TILE_SIZE);
-    if (level.getTile(curTileX, floorTileY) === TileType.SOLID) {
+    const floor = level.getTile(curTileX, floorTileY);
+    if (floor === TileType.SOLID || floor === TileType.CRUMBLING || floor === TileType.CHECKPOINT) {
       this.y = floorTileY * TILE_SIZE - this.height;
       this.vy = 0;
     }
@@ -117,59 +123,34 @@ export class Gloomba extends Entity {
     const py = this.y;
 
     if (this.isStomped) {
-      // Flattened deckhand
-      ctx.fillStyle = '#1e293b';
+      // Flattened mechanical buoy.
+      ctx.fillStyle = '#b45309';
       ctx.fillRect(px, py + 18, this.width, 8);
-      ctx.fillStyle = '#ef4444'; // Red neckerchief visible
-      ctx.fillRect(px + 6, py + 19, 14, 4);
+      ctx.fillStyle = '#facc15';
+      ctx.fillRect(px + 4, py + 20, 18, 3);
       return;
     }
 
-    // Pete's Deckhand Sailor (Dark rubber-hose body with blue sailor cap & red neckerchief)
-    ctx.fillStyle = '#1e293b';
+    // Non-human mechanical buoy hazard: geometric, nautical, and clearly
+    // distinct from a human or animal caricature.
+    ctx.fillStyle = '#c2410c';
     ctx.beginPath();
-    ctx.arc(px + 13, py + 12, 11, Math.PI, 0, false);
-    ctx.lineTo(px + 23, py + 22);
-    ctx.lineTo(px + 3, py + 22);
+    ctx.arc(px + 13, py + 14, 11, Math.PI, 0, false);
+    ctx.lineTo(px + 23, py + 24);
+    ctx.lineTo(px + 3, py + 24);
     ctx.closePath();
     ctx.fill();
 
-    // Blue & White Sailor Dixie Cup Hat
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(px + 5, py - 1, 16, 5);
-    ctx.fillStyle = '#2563eb';
-    ctx.fillRect(px + 7, py + 2, 12, 2);
-
-    // Red Sailor Neckerchief (Pop of color!)
-    ctx.fillStyle = '#ef4444';
-    ctx.beginPath();
-    ctx.moveTo(px + 7, py + 18);
-    ctx.lineTo(px + 19, py + 18);
-    ctx.lineTo(px + 13, py + 24);
-    ctx.closePath();
-    ctx.fill();
-
-    // Pie-eyes (1928 vintage style)
-    ctx.fillStyle = '#f8fafc';
-    ctx.fillRect(px + 6, py + 8, 4, 6);
-    ctx.fillRect(px + 16, py + 8, 4, 6);
-
-    // Angry pupils
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(px + (this.facing < 0 ? 6 : 8), py + 10, 2, 4);
-    ctx.fillRect(px + (this.facing < 0 ? 16 : 18), py + 10, 2, 4);
-
-    // Grumpy Bulldog mouth
-    ctx.strokeStyle = '#f8fafc';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(px + 13, py + 16, 4, Math.PI * 0.2, Math.PI * 0.8, false);
-    ctx.stroke();
-
-    // Sailor boots
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(px + 2, py + 22, 8, 4);
-    ctx.fillRect(px + 16, py + 22, 8, 4);
+    // Warning bands and a central metal plate; no face-like features.
+    ctx.fillStyle = '#facc15';
+    ctx.fillRect(px + 3, py + 10, 20, 4);
+    ctx.fillStyle = '#7c2d12';
+    ctx.fillRect(px + 7, py + 17, 12, 5);
+    ctx.fillStyle = '#e2e8f0';
+    ctx.fillRect(px + 11, py + 18, 4, 3);
+    ctx.fillStyle = '#334155';
+    ctx.fillRect(px + 10, py + 1, 6, 4);
+    ctx.fillRect(px + 12, py - 3, 2, 4);
   }
 }
 
@@ -212,36 +193,28 @@ export class FallingSpike extends Entity {
     const px = this.x + this.shakeOffset - cameraX;
     const py = this.y;
 
-    // Anchor chain trailing upward
-    ctx.strokeStyle = '#94a3b8';
-    ctx.lineWidth = 2;
+    // Suspended warning lantern: a readable silhouette at game scale.
+    ctx.strokeStyle = '#91a5ad';
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(px + this.width / 2, py);
-    ctx.lineTo(px + this.width / 2, py - 30);
+    ctx.moveTo(px + 10, py);
+    ctx.lineTo(px + 10, py - 24);
     ctx.stroke();
+    ctx.fillStyle = '#b98a4b';
+    ctx.fillRect(px + 6, py - 27, 8, 4);
 
-    // Heavy iron anchor body
-    ctx.fillStyle = '#334155';
-    ctx.fillRect(px + 8, py, 4, 16);
-
-    // Anchor crossbar
-    ctx.fillStyle = '#64748b';
-    ctx.fillRect(px + 2, py + 4, 16, 3);
-
-    // Curved sharp flukes
-    ctx.strokeStyle = '#ef4444';
-    ctx.lineWidth = 2.5;
+    ctx.fillStyle = this.state === 'shaking' ? '#f3c969' : '#c4573c';
     ctx.beginPath();
-    ctx.arc(px + 10, py + 14, 8, 0.2, Math.PI - 0.2, false);
-    ctx.stroke();
-
-    // Bottom point
-    ctx.fillStyle = '#ef4444';
-    ctx.beginPath();
-    ctx.moveTo(px + 10, py + 24);
-    ctx.lineTo(px + 7, py + 16);
-    ctx.lineTo(px + 13, py + 16);
+    ctx.arc(px + 10, py + 5, 8, 0, Math.PI * 2);
     ctx.closePath();
     ctx.fill();
+    ctx.fillStyle = '#f6d88c';
+    ctx.fillRect(px + 6, py + 1, 8, 3);
+    ctx.fillStyle = '#23343c';
+    ctx.fillRect(px + 8, py - 1, 4, 12);
+    ctx.fillStyle = '#c4573c';
+    ctx.fillRect(px + 3, py + 12, 14, 4);
+    ctx.fillStyle = '#91a5ad';
+    ctx.fillRect(px + 2, py + 16, 16, 3);
   }
 }

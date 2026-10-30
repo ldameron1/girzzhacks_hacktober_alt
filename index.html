@@ -3,11 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GemmaKaizo: AI-Powered Adaptive Rage Platformer (Steamboat Willie × Gemma 4)</title>
+  <title>GemmaKaizo: AI-Powered Adaptive Rage Platformer (Moonlit Steamboat × Gemma 4)</title>
   <link rel="stylesheet" href="/src/style.css" />
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="app-container">
@@ -15,11 +12,11 @@
     <header class="app-header">
       <div class="logo-group">
         <h1 class="game-title">GEMMA<span>KAIZO</span></h1>
-        <span class="hackathon-tag">GRIZZHACKS • BEST USE OF GEMMA 4</span>
+        <span class="hackathon-tag">MOONLIT STEAMBOAT · ADAPTIVE RUN</span>
       </div>
       <div class="header-badges">
         <span id="hud-bot-badge" class="badge human-active">🎮 HUMAN PLAYER</span>
-        <span class="badge model-tag">OVERSEER: GEMMA 4</span>
+        <span class="badge model-tag">AI SIGNAL LIVE</span>
       </div>
     </header>
 
@@ -30,7 +27,7 @@
         <!-- HUD Bar -->
         <div class="arcade-hud">
           <div class="hud-item">
-            <span class="hud-label">DEATHS</span>
+            <span class="hud-label">RUN DEATHS</span>
             <span id="hud-deaths" class="hud-val danger">0</span>
           </div>
           <div class="hud-item">
@@ -42,7 +39,7 @@
             <span id="hud-progress" class="hud-val cyan">0%</span>
           </div>
           <div class="hud-item">
-            <span class="hud-label">DIFFICULTY</span>
+            <span class="hud-label">THREAT TIER</span>
             <span id="hud-brutality" class="hud-val neon">TIER 3/10</span>
           </div>
           <div class="hud-item rage-container">
@@ -50,7 +47,7 @@
             <div class="rage-bar"><div id="hud-rage-fill" class="rage-fill"></div></div>
           </div>
           <div class="hud-item">
-            <span class="hud-label">MUTATIONS</span>
+            <span class="hud-label">AI CHANGES</span>
             <span id="hud-mutations" class="hud-val neon">0</span>
           </div>
         </div>
@@ -58,14 +55,23 @@
         <!-- Canvas Container -->
         <div class="canvas-wrapper">
           <canvas id="game-canvas" width="800" height="480"></canvas>
+          <div id="api-monitor" class="api-monitor" aria-live="polite">
+            <div class="api-monitor-header">
+              <span><i class="monitor-dot"></i> API EXCHANGE</span>
+              <span id="api-monitor-status">IDLE</span>
+            </div>
+            <div id="api-monitor-lines" class="api-monitor-lines">
+              <div class="api-line muted">waiting for first telemetry request...</div>
+            </div>
+          </div>
           <div id="start-overlay" class="overlay">
             <div class="overlay-box start-box">
               <h2 class="start-title">GEMMA<span class="red">KAIZO</span></h2>
-              <p class="start-subtitle">Steamboat Willie vs. Gemma 4 — the AI is watching. It will learn your habits. It will punish your mistakes.</p>
+              <p class="start-subtitle">A moonlit steamboat run shaped by Gemma 4 — the AI reads your habits and changes the route.</p>
               <div class="start-features">
                 <span>🧠 Adaptive AI Game Master</span>
                 <span>☠️ Dynamic Kaizo Traps</span>
-                <span>⚡ Speedrunner Fairness Guaranteed</span>
+                <span>⚡ Estimated route shown live</span>
               </div>
               <button id="btn-start" class="btn primary-btn pulse-btn">PRESS START</button>
               <p class="start-hint">or press any key</p>
@@ -98,20 +104,22 @@
         <!-- Arcade Toolbar Controls -->
         <div class="toolbar">
           <button id="btn-toggle-bot" class="btn action-btn">
-            <span class="btn-icon">🤖</span> Auto-Play (AI Agent)
+            <span class="btn-icon">🤖</span> Reflex Pilot
           </button>
           <button id="btn-toggle-heatmap" class="btn action-btn">
             <span class="btn-icon">☠️</span> Death Heatmap
           </button>
           <button id="btn-toggle-ghost" class="btn action-btn">
-            <span class="btn-icon">⚡</span> Speedrunner Ghost Path
+            <span class="btn-icon">⚡</span> Clearance Estimate
           </button>
           <button id="btn-toggle-audio" class="btn action-btn">
             <span class="btn-icon">🔊</span> Audio: ON
           </button>
-          <button id="btn-reset" class="btn danger-btn">
-            <span class="btn-icon">🔄</span> Reset Stage
-          </button>
+          <div class="toolbar-end">
+            <button id="btn-reset" class="btn danger-btn">
+              <span class="btn-icon">🔄</span> Reset Stage
+            </button>
+          </div>
         </div>
 
         <!-- Instructions Footer -->
@@ -121,6 +129,10 @@
           <span><strong>Sprint:</strong> Shift or X</span>
           <span><strong>Bot:</strong> B</span>
           <span><strong>Heatmap:</strong> H</span>
+        </div>
+        <div class="demo-workflow-note">
+          LIVE DEMO · <strong>127.0.0.1:3001</strong> · Production source refresh:
+          <strong>npm run hackathon-refresh</strong>, then refresh this page.
         </div>
       </section>
 
@@ -133,10 +145,10 @@
               <span class="dot yellow"></span>
               <span class="dot green"></span>
             </div>
-            <span class="terminal-title">GEMMA 4 ARCHITECT CONSOLE</span>
+            <span class="terminal-title">MOONLIT STEAMBOAT // AI CONSOLE</span>
             <div class="terminal-meta">
-              <span id="overseer-model" class="meta-tag">gemma-4-26b-a4b-it</span>
-              <span id="overseer-latency" class="meta-tag">120ms</span>
+              <span id="overseer-model" class="meta-tag">MODEL —</span>
+              <span id="overseer-latency" class="meta-tag">LATENCY —</span>
             </div>
           </div>
 
@@ -155,6 +167,28 @@
               <div id="overseer-archetype" class="archetype-badge">Analyzing locomotion...</div>
             </div>
 
+            <div class="intel-section request-feed-section">
+              <div class="request-feed-heading">
+                <span class="intel-label">LIVE ADAPTATION STREAM:</span>
+                <span id="overseer-feed-status" class="feed-status">WAITING</span>
+              </div>
+              <div id="overseer-live-stream" class="live-stream" aria-live="polite">
+                <div class="stream-line"><span class="stream-dot"></span> telemetry stream connected</div>
+              </div>
+            </div>
+            <div class="intel-section proof-section" aria-live="polite">
+              <div class="request-feed-heading">
+                <span class="intel-label">ADAPTATION PROOF CHAIN:</span>
+                <span class="proof-caption">REAL EVENTS</span>
+              </div>
+              <div id="overseer-proof-chain" class="proof-chain">
+                <div class="proof-step pending"><span class="proof-mark">○</span><span><b>1 TELEMETRY</b><small>Waiting for a death sample</small></span></div>
+                <div class="proof-step pending"><span class="proof-mark">○</span><span><b>2 API REQUEST</b><small>POST /api/mutate</small></span></div>
+                <div class="proof-step pending"><span class="proof-mark">○</span><span><b>3 VALIDATED MUTATION</b><small>Server guards pending</small></span></div>
+                <div class="proof-step pending"><span class="proof-mark">○</span><span><b>4 LIVE APPLY</b><small>Level patch pending</small></span></div>
+              </div>
+            </div>
+
             <!-- Clinical Diagnosis -->
             <div class="intel-section">
               <span class="intel-label">TELEMETRY DIAGNOSIS:</span>
@@ -163,24 +197,37 @@
               </p>
             </div>
 
+            <div class="api-response-blurb" aria-live="polite">
+              <div class="response-blurb-heading">
+                <span class="intel-label">LATEST /API/MUTATE RESPONSE:</span>
+                <span id="overseer-response-state" class="response-state">WAITING</span>
+              </div>
+              <p id="overseer-response-blurb">Awaiting a real mutation response.</p>
+            </div>
+
             <!-- Deployed Mutations List -->
             <div class="intel-section">
               <span class="intel-label">ACTIVE KAIZO ADAPTATIONS:</span>
               <div id="overseer-mutations" class="mutations-container">
-                <div class="mutation-badge">
-                  <span class="m-type">[KAIZO_BLOCK]</span>
-                  <span class="m-pos">@ (23, 10)</span>
-                  <span class="m-desc">Intercepts blind max-height leap over Section 1 gap.</span>
-                </div>
+                <div class="feed-empty">No mutations yet. They appear after a death.</div>
               </div>
             </div>
 
             <!-- Fairness Guarantee -->
             <div class="intel-section fairness-box">
-              <span class="intel-label">SPEEDRUNNER FAIRNESS AUDIT:</span>
+              <span class="intel-label">MODEL FAIRNESS ESTIMATE:</span>
               <p id="overseer-fairness" class="fairness-text">
-                ✓ Mathematically verified: All gaps bypassable with momentum cancel or tap hops.
+                Waiting for the first model response.
               </p>
+            </div>
+
+            <div class="intel-section request-feed-section">
+              <div class="request-feed-heading">
+                <span class="intel-label">RAW MODEL EXCHANGE:</span>
+              </div>
+              <div id="overseer-request-feed" class="request-feed" aria-live="polite">
+                <div class="feed-empty">Death-triggered mutation requests will appear here.</div>
+              </div>
             </div>
           </div>
         </div>

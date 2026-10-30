@@ -14,7 +14,7 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, '..');
 
 const app = express();
-const port = parseInt(process.env.PORT || '3000', 10);
+const port = parseInt(process.env.PORT || '3001', 10);
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
@@ -26,7 +26,7 @@ const playerDecision = new PlayerDecisionService();
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'online',
-    googleApiKeyConfigured: !!(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY),
+    googleApiKeyConfigured: gemmaArchitect.getApiKeyConfigured(),
     openRouterApiKeyConfigured: !!process.env.OPENROUTER_API_KEY,
     models: {
       architect: 'google/gemma-4-26b-a4b-it',
@@ -35,6 +35,16 @@ app.get('/api/health', (req, res) => {
     },
     timestamp: new Date().toISOString()
   });
+});
+
+// Key configuration endpoints (swap the Gemini key without a server restart)
+app.get('/api/config', (req, res) => {
+  res.json({ googleApiKeyConfigured: gemmaArchitect.getApiKeyConfigured() });
+});
+app.post('/api/config', (req, res) => {
+  const key = typeof req.body?.apiKey === 'string' ? req.body.apiKey : '';
+  gemmaArchitect.setApiKey(key);
+  res.json({ ok: true, googleApiKeyConfigured: gemmaArchitect.getApiKeyConfigured() });
 });
 
 // Telemetry & Kaizo Mutation endpoint (Gemma 4)

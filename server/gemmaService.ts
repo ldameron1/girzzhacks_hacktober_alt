@@ -25,6 +25,7 @@ export interface KaizoArchitectResponse {
   brutalityLevel: number;
   modelUsed: string;
   latencyMs: number;
+  fallbackUsed: boolean;
 }
 
 export class GemmaArchitectService {
@@ -34,6 +35,15 @@ export class GemmaArchitectService {
   constructor() {
     this.apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
     this.openRouterKey = process.env.OPENROUTER_API_KEY || '';
+  }
+
+  setApiKey(key: string) {
+    this.apiKey = String(key || '').trim();
+    console.log('[GemmaArchitect] Google API key swapped at runtime:', this.apiKey ? 'configured' : 'cleared');
+  }
+
+  getApiKeyConfigured() {
+    return !!this.apiKey;
   }
 
   async analyzeAndMutate(telemetry: TelemetryPayload): Promise<KaizoArchitectResponse> {
@@ -103,7 +113,8 @@ export class GemmaArchitectService {
             fairnessAudit: parsed.fairness_audit || 'All traps bypassable via momentum cancel or micro-hop.',
             brutalityLevel: Math.min(10, Math.max(1, parsed.brutality_level || 5)),
             modelUsed: `Google ${model}`,
-            latencyMs: 0
+            latencyMs: 0,
+            fallbackUsed: model !== modelsToTry[0]
           };
         }
       } catch (err) {
@@ -149,7 +160,8 @@ export class GemmaArchitectService {
         fairnessAudit: parsed.fairness_audit || 'Micro-timing allows continuous speedrunner traversal.',
         brutalityLevel: Math.min(10, Math.max(1, parsed.brutality_level || 5)),
         modelUsed: 'OpenRouter Gemma 4 26B',
-        latencyMs: 0
+        latencyMs: 0,
+        fallbackUsed: true
       };
     }
 
@@ -335,7 +347,8 @@ RESPOND ONLY WITH A VALID JSON OBJECT MATCHING THIS SCHEMA (no preamble or prose
       fairnessAudit: 'All traps can be circumvented via a controlled short-hop followed by horizontal momentum air-strafe.',
       brutalityLevel: Math.min(10, Math.max(3, telemetry.totalDeaths + 3)),
       modelUsed: 'Gemma 4 Heuristic Core (Offline Safe)',
-      latencyMs: 5
+      latencyMs: 5,
+      fallbackUsed: true
     };
   }
 }
