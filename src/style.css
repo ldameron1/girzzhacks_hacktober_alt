@@ -11,7 +11,6 @@
   --text-dim: #9bb0ae;
   --font-retro: 'Press Start 2P', cursive, monospace;
   --font-mono: 'Share Tech Mono', monospace;
-  filter: grayscale(1) contrast(1.14) brightness(1.06);
   image-rendering: pixelated;
   background: #111;
 }

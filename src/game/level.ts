@@ -336,37 +336,56 @@ export class Level {
       if (x < startTileX - 2 || x > endTileX + 2) return;
       const px = x * TILE_SIZE - cameraX + 16;
       const py = 12 * TILE_SIZE - 6;
-      ctx.save();
-      ctx.translate(px, py);
-      ctx.strokeStyle = '#f1f0df';
-      ctx.fillStyle = '#d7d5c7';
-      ctx.lineWidth = 2;
-      if (kind === 'pumpkin') {
-        ctx.beginPath();
-        ctx.ellipse(0, -9, 10, 7, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#22252a';
-        ctx.fillRect(-2, -18, 4, 4);
-        ctx.beginPath();
-        ctx.moveTo(-6, -9); ctx.lineTo(-2, -5); ctx.lineTo(2, -9);
-        ctx.lineTo(6, -5);
-        ctx.stroke();
-      } else if (kind === 'ghost') {
-        ctx.beginPath();
-        ctx.arc(0, -16, 9, Math.PI, 0);
-        ctx.lineTo(9, -2); ctx.lineTo(4, -6); ctx.lineTo(0, -2);
-        ctx.lineTo(-4, -6); ctx.lineTo(-9, -2); ctx.closePath();
-        ctx.fill();
-        ctx.fillStyle = '#24272b';
-        ctx.fillRect(-4, -17, 2, 4); ctx.fillRect(2, -17, 2, 4);
-      } else {
-        ctx.beginPath();
-        ctx.moveTo(-10, -5); ctx.lineTo(-2, -13); ctx.lineTo(7, -5);
-        ctx.moveTo(-5, -10); ctx.lineTo(3, -1);
-        ctx.moveTo(5, -11); ctx.lineTo(-3, -1);
-        ctx.stroke();
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.strokeStyle = '#f1f0df';
+    ctx.fillStyle = '#d7d5c7';
+    ctx.lineWidth = 2;
+    if (kind === 'pumpkin') {
+      ctx.beginPath();
+      ctx.ellipse(0, -9, 10, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#22252a';
+      ctx.fillRect(-2, -18, 4, 4);
+      ctx.beginPath();
+      ctx.moveTo(-6, -9); ctx.lineTo(-2, -5); ctx.lineTo(2, -9);
+      ctx.lineTo(6, -5);
+      ctx.stroke();
+    } else if (kind === 'ghost') {
+      ctx.beginPath();
+      ctx.arc(0, -16, 9, Math.PI, 0);
+      ctx.lineTo(9, -2); ctx.lineTo(4, -6); ctx.lineTo(0, -2);
+      ctx.lineTo(-4, -6); ctx.lineTo(-9, -2); ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#24272b';
+      ctx.fillRect(-4, -17, 2, 4); ctx.fillRect(2, -17, 2, 4);
+    } else {
+      // Old layout used crossing diagonal strokes that read as a stick
+      // figure; draw a flat bone pile instead: two horizontal bones.
+      ctx.fillStyle = '#f1f0df';
+      ctx.fillRect(-10, -5, 20, 3);
+      for (const kx of [-12, 10]) {
+        for (const ky of [-6, -2]) {
+          ctx.beginPath();
+          ctx.arc(kx, ky, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
-      ctx.restore();
+      ctx.fillRect(-6, 3, 14, 3);
+      for (const kx of [-8, 6]) {
+        for (const ky of [2, 6]) {
+          ctx.beginPath();
+          ctx.arc(kx, ky, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.fillStyle = '#24272b';
+      ctx.beginPath();
+      ctx.arc(-2, -3.5, 1.2, 0, Math.PI * 2);
+      ctx.arc(2, -3.5, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
     });
   }
 
@@ -447,42 +466,55 @@ export class Level {
   }
 
   /**
-   * Brass Steam Cargo Crate with anchor stencil
+   * Wooden Slat Cargo Crate with rope cross and brass plaque
    */
   private renderCargoCrate(ctx: CanvasRenderingContext2D, px: number, py: number) {
-    // Rich Brass Body
-    ctx.fillStyle = '#b45309';
-    ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
-    ctx.fillStyle = '#f59e0b';
-    ctx.fillRect(px + 2, py + 2, TILE_SIZE - 4, TILE_SIZE - 4);
+    // Art is inset 2px so the crate never spills into neighboring tile space.
+    const x = px + 2;
+    const y = py + 2;
+    const s = TILE_SIZE - 4; // 28px inner face
 
-    // Corner brass braces
-    ctx.fillStyle = '#78350f';
-    ctx.fillRect(px + 2, py + 2, 6, 6);
-    ctx.fillRect(px + 24, py + 2, 6, 6);
-    ctx.fillRect(px + 2, py + 24, 6, 6);
-    ctx.fillRect(px + 24, py + 24, 6, 6);
+    // Dark wood frame
+    ctx.fillStyle = '#5b3a1d';
+    ctx.fillRect(x, y, s, s);
 
-    // Original anchor stencil: readable as cargo, not a platformer question box.
-    ctx.strokeStyle = '#fff1b8';
+    // Wooden slats
+    ctx.fillStyle = '#a9743f';
+    ctx.fillRect(x + 3, y + 3, 6, s - 6);
+    ctx.fillRect(x + 11, y + 3, 6, s - 6);
+    ctx.fillRect(x + 19, y + 3, 6, s - 6);
+
+    // Slat grain seams
+    ctx.fillStyle = '#7a4e26';
+    ctx.fillRect(x + 9, y + 3, 2, s - 6);
+    ctx.fillRect(x + 17, y + 3, 2, s - 6);
+
+    // Rope cross face-binding with corner knots
+    ctx.strokeStyle = '#d9c08a';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.arc(px + 16, py + 15, 5, 0, Math.PI * 2);
-    ctx.moveTo(px + 16, py + 20);
-    ctx.lineTo(px + 16, py + 25);
-    ctx.moveTo(px + 11, py + 24);
-    ctx.lineTo(px + 16, py + 27);
-    ctx.lineTo(px + 21, py + 24);
+    ctx.moveTo(x + 2, y + 2);
+    ctx.lineTo(x + s - 2, y + s - 2);
+    ctx.moveTo(x + s - 2, y + 2);
+    ctx.lineTo(x + 2, y + s - 2);
     ctx.stroke();
-    ctx.fillStyle = '#fff1b8';
-    ctx.fillRect(px + 15, py + 8, 2, 8);
-
-    // A small pumpkin-orange lantern cue keeps the October theme visible
-    // without changing the crate's gameplay meaning.
-    ctx.fillStyle = 'rgba(255, 190, 70, 0.45)';
+    ctx.fillStyle = '#d9c08a';
     ctx.beginPath();
-    ctx.arc(px + 16, py + 10, 5, 0, Math.PI * 2);
+    ctx.arc(x + 4, y + 4, 2, 0, Math.PI * 2);
+    ctx.arc(x + s - 4, y + 4, 2, 0, Math.PI * 2);
+    ctx.arc(x + 4, y + s - 4, 2, 0, Math.PI * 2);
+    ctx.arc(x + s - 4, y + s - 4, 2, 0, Math.PI * 2);
     ctx.fill();
+
+    // Small brass plaque at the rope intersection
+    ctx.fillStyle = '#c9973f';
+    ctx.fillRect(x + 9, y + 11, 10, 7);
+    ctx.strokeStyle = '#7a5518';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x + 9.5, y + 11.5, 9, 6);
+    ctx.fillStyle = '#7a5518';
+    ctx.fillRect(x + 10, y + 12, 1.5, 1.5);
+    ctx.fillRect(x + 16.5, y + 15.5, 1.5, 1.5);
   }
 
   /**
@@ -616,33 +648,94 @@ export class Level {
   }
 
   /**
-   * Steamboat Smoke Funnel Mast with Riverboat Flag (Goal)
+   * 1920s riverboat SMOKESTACK FUNNEL mast (Goal)
+   * Tall dark-iron two-tone cylinder stack, black top band, brass base ring,
+   * billowing animated smoke, mid-height ship's bell and a brass swallowtail
+   * flag. Per-tile rendering; only the terminal tiles carry the accessories.
    */
   private renderSteamMast(ctx: CanvasRenderingContext2D, px: number, py: number) {
-    // One continuous iron mast. The old per-tile finials made this render as
-    // a stack of disconnected poles and flags.
-    ctx.fillStyle = '#263746';
-    ctx.fillRect(px + 14, py, 4, TILE_SIZE);
-    ctx.fillStyle = 'rgba(239, 216, 154, 0.22)';
-    ctx.fillRect(px + 10, py + 4, 3, 20);
-    ctx.fillStyle = '#a98552';
-    ctx.fillRect(px + 12, py + 1, 8, 2);
+    const row = Math.round(py / TILE_SIZE);
+    const isTopRow = py === 3 * TILE_SIZE;
 
-    // Only the top tile owns the pennant and finial.
-    if (py === 3 * TILE_SIZE) {
-      ctx.fillStyle = '#c99b52';
+    // Two-tone dark-iron cylinder body (stays inside the tile).
+    if (isTopRow) {
+      ctx.fillStyle = '#35424d';
+      ctx.fillRect(px + 8, py + 9, 16, TILE_SIZE - 9);
+    } else {
+      ctx.fillStyle = '#35424d';
+      ctx.fillRect(px + 8, py, 16, TILE_SIZE);
+    }
+    ctx.fillStyle = '#4d5c68'; // lit face
+    ctx.fillRect(px + 10, isTopRow ? py + 9 : py, 4, isTopRow ? TILE_SIZE - 9 : TILE_SIZE);
+    ctx.fillStyle = '#20272e'; // shaded face
+    ctx.fillRect(px + 20, isTopRow ? py + 9 : py, 4, isTopRow ? TILE_SIZE - 9 : TILE_SIZE);
+    ctx.fillStyle = '#14171c'; // rivet seams
+    ctx.fillRect(px + 8, isTopRow ? py + 22 : py + 6, 16, 1);
+    ctx.fillRect(px + 8, py + 27, 16, 1);
+
+    if (isTopRow) {
+      // Black cap band with rim highlight
+      ctx.fillStyle = '#101318';
+      ctx.fillRect(px + 6, py + 1, 20, 8);
+      ctx.fillStyle = '#3a4550';
+      ctx.fillRect(px + 6, py + 8, 20, 2);
+
+      // Short staff + plain brass swallowtail flag (subordinates old pennant)
+      ctx.fillStyle = '#8a6427';
+      ctx.fillRect(px + 15, py - 9, 2, 11);
+      ctx.fillStyle = '#d9b25f';
       ctx.beginPath();
-      ctx.arc(px + 16, py - 2, 4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#d8b06a';
-      ctx.beginPath();
-      ctx.moveTo(px + 18, py + 3);
-      ctx.lineTo(px + 43, py + 10);
-      ctx.lineTo(px + 18, py + 17);
+      ctx.moveTo(px + 17, py - 9);
+      ctx.lineTo(px + 33, py - 9);
+      ctx.lineTo(px + 27, py - 6);
+      ctx.lineTo(px + 33, py - 3);
+      ctx.lineTo(px + 17, py - 3);
       ctx.closePath();
       ctx.fill();
-      ctx.fillStyle = '#314f58';
-      ctx.fillRect(px + 20, py + 8, 15, 3);
+      ctx.fillStyle = '#8a6427';
+      ctx.fillRect(px + 17, py - 9, 3, 6);
+
+      // Billowing smoke puffs (gentle drift using the level water timer)
+      const t = this.waterAnimTimer;
+      for (let i = 0; i < 3; i++) {
+        const phase = (t * 0.5 + i * 0.34) % 1;
+        const sx = px + 15 + Math.sin(t * 1.2 + i * 2.1) * 5;
+        const sy = py - 4 - phase * 22 - i * 3;
+        const r = 4.5 + phase * 4.5;
+        ctx.fillStyle = `rgba(224, 227, 232, ${(0.5 - phase * 0.38).toFixed(2)})`;
+        ctx.beginPath();
+        ctx.arc(sx, sy, r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    if (row === 7) {
+      // Small brass ship's bell hanging at mid-height
+      ctx.fillStyle = '#8a6427';
+      ctx.fillRect(px + 15, py + 10, 2, 3);
+      ctx.fillStyle = '#d9b25f';
+      ctx.beginPath();
+      ctx.moveTo(px + 11, py + 22);
+      ctx.quadraticCurveTo(px + 16, py + 12, px + 21, py + 22);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#8a6427';
+      ctx.fillRect(px + 10, py + 22, 12, 2);
+      ctx.fillStyle = '#4a360f';
+      ctx.beginPath();
+      ctx.arc(px + 16, py + 25, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (row === 11) {
+      // Brass mounting ring at the base
+      ctx.fillStyle = '#b98a4b';
+      ctx.fillRect(px + 6, py + 24, 20, 6);
+      ctx.fillStyle = '#e2b96a';
+      ctx.fillRect(px + 8, py + 25, 4, 2);
+      ctx.fillRect(px + 20, py + 25, 4, 2);
+      ctx.fillStyle = '#1c1917';
+      ctx.fillRect(px + 6, py + 29, 20, 2);
     }
   }
 
@@ -667,10 +760,23 @@ export class Level {
     ctx.lineWidth = 2;
     ctx.strokeRect(px + 1, py + 1, TILE_SIZE - 2, TILE_SIZE - 2);
 
+    // Film reel drawn as shapes (removed 'KAIZO' text that read as a stick
+    // figure floating in the sky): outer reel, hub, and film perforations.
+    ctx.strokeStyle = '#e9d5ff';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(px + 16, py + 16, 9, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = '#c084fc';
+    ctx.beginPath();
+    ctx.arc(px + 16, py + 16, 2.5, 0, Math.PI * 2);
+    ctx.fill();
     ctx.fillStyle = '#e9d5ff';
-    ctx.font = 'bold 10px monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText('KAIZO', px + 16, py + 19);
+    for (const [hx, hy] of [[16, 9], [16, 23], [9, 16], [23, 16], [11, 11], [21, 11], [11, 21], [21, 21]] as const) {
+      ctx.beginPath();
+      ctx.arc(px + hx, py + hy, 1.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 
   /**
@@ -721,13 +827,25 @@ export class Level {
     ctx.beginPath();
     ctx.arc(cx, cy, 7, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.fillStyle = '#f59e0b';
-    ctx.fillRect(cx - 4, cy - 5, 8, 10);
-    ctx.fillStyle = '#fff1b8';
-    ctx.fillRect(cx - 2, cy - 3, 4, 6);
-    ctx.fillStyle = '#6b3f1e';
-    ctx.fillRect(cx - 5, cy - 9, 10, 2);
-    ctx.fillRect(cx - 5, cy + 7, 10, 2);
+
+    // Eighth note drawn as note-head + stem + flag: reads as a musical
+    // token, not a stick figure (the old head-bar-over-body rects did).
+    ctx.fillStyle = '#b45309';
+    ctx.beginPath();
+    ctx.ellipse(cx + 1, cy + 4, 3.4, 2.6, -0.35, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#fff1b8';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cx + 4, cy + 3);
+    ctx.lineTo(cx + 4, cy - 5);
+    ctx.stroke();
+    ctx.strokeStyle = '#fff1b8';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(cx + 4, cy - 5);
+    ctx.quadraticCurveTo(cx + 8, cy - 4, cx + 7, cy - 0.5);
+    ctx.stroke();
     ctx.restore();
   }
 }
