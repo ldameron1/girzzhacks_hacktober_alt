@@ -20,6 +20,27 @@ window.addEventListener('DOMContentLoaded', () => {
   const gameoverOverlay = document.getElementById('gameover-overlay')!;
   const btnContinue = document.getElementById('btn-continue')!;
   const btnFullReset = document.getElementById('btn-fullreset')!;
+
+  const apiKeyInput = document.getElementById('api-key-input') as HTMLInputElement | null;
+  const btnApiKey = document.getElementById('btn-api-key') as HTMLButtonElement | null;
+  const apiKeyStatus = document.getElementById('api-key-status');
+  btnApiKey?.addEventListener('click', async () => {
+    const key = apiKeyInput?.value.trim();
+    if (!key || !apiKeyStatus) return;
+    apiKeyStatus.textContent = 'saving…';
+    try {
+      const res = await fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: key })
+      });
+      const data = await res.json();
+      apiKeyStatus.textContent = data.googleApiKeyConfigured ? 'DIRECT GEMMA ON' : 'failed';
+    } catch {
+      apiKeyStatus.textContent = 'offline';
+    }
+    if (apiKeyInput) apiKeyInput.value = '';
+  });
   const victoryOverlay = document.getElementById('victory-overlay')!;
   const btnReplay = document.getElementById('btn-replay')!;
 

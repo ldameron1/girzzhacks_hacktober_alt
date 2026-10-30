@@ -910,3 +910,28 @@ canvas#game-canvas {
 .proof-step.active .proof-mark { color: #fbbf24; }
 .proof-step.complete { color: #9ed5c8; }
 .proof-step.complete .proof-mark { color: #4ade80; }
+
+.api-key-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 8px 12px;
+  border-top: 1px solid rgba(213, 168, 93, 0.25);
+}
+
+.api-key-row input {
+  flex: 1;
+  min-width: 0;
+  background: rgba(10, 18, 24, 0.8);
+  border: 1px solid rgba(213, 168, 93, 0.35);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font: 0.66rem var(--font-mono);
+  padding: 6px 8px;
+}
+
+.api-key-row #api-key-status {
+  font: 0.62rem var(--font-mono);
+  color: var(--accent-green);
+  white-space: nowrap;
+}
